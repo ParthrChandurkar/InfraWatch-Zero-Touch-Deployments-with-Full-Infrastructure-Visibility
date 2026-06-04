@@ -1,69 +1,167 @@
-# InfraWatch - Zero-Touch Deployments with Full Infrastructure Visibility
+# InfraWatch
 
-InfraWatch is a SaaS-ready cloud-native deployment and monitoring platform for teams that want the feel of a lightweight internal Heroku plus Grafana. It can trigger service deployments, track rollout status, show CPU and memory charts, and stream recent logs from one dashboard.
+InfraWatch is a cloud-native deployment and monitoring platform. It lets a team deploy containerized microservices and watch their status, metrics, and logs from one dashboard.
 
-## Business Use Case
+Think of it as a small internal Heroku plus Grafana:
 
-Small and mid-size companies can connect a GitHub repository, build and ship Docker images through CI/CD, and monitor services without maintaining a large DevOps team. The product can be packaged as a paid platform using per-deployment, per-service, or per-seat pricing.
+- Deploy services from a dashboard or API
+- Track deployment status
+- View CPU, memory, request-rate, and error-rate charts
+- Read recent service logs
+- Run locally with Docker Compose
+- Deploy to Kubernetes with CI/CD support
 
-## Architecture
+## How It Works
 
 ```mermaid
 flowchart LR
-    User[Engineer] --> UI[React Dashboard]
-    UI --> API[FastAPI Control Plane]
-    API --> K8S[Kubernetes API]
-    API --> PROM[Prometheus]
-    API --> LOKI[Loki]
-    GitHub[GitHub Actions] --> DockerHub[DockerHub Registry]
-    GitHub --> K8S
-    K8S --> Backend[InfraWatch Backend]
-    K8S --> Frontend[InfraWatch Frontend]
-    K8S --> Postgres[(PostgreSQL StatefulSet)]
-    K8S --> Apps[Managed Microservices]
-    Promtail[Promtail] --> LOKI
-    PROM --> Grafana[Grafana Dashboards]
-    Alertmanager[Alertmanager] --> Ops[Email or Slack]
+    Dev[Developer] --> GitHub[GitHub Push]
+    GitHub --> Actions[GitHub Actions]
+    Actions --> DockerHub[DockerHub Images]
+    Actions --> K8S[Kubernetes Deploy]
+    K8S --> Apps[Running Services]
+    Apps --> Prometheus[Prometheus Metrics]
+    Apps --> Loki[Loki Logs]
+    Prometheus --> Grafana[Grafana Dashboards]
+    Loki --> API[FastAPI Backend]
+    Prometheus --> API
+    API --> UI[React Dashboard]
 ```
 
-## Repository Layout
+Basic flow:
+
+1. Developer pushes code to GitHub.
+2. GitHub Actions runs tests and builds Docker images.
+3. Images are pushed to DockerHub.
+4. Kubernetes applies the latest deployment.
+5. Prometheus collects metrics.
+6. Loki collects logs.
+7. React dashboard shows deployments, charts, and logs through the FastAPI backend.
+
+## Tech Stack
+
+| Area | Technology |
+|---|---|
+| Backend | Python, FastAPI |
+| Frontend | React, Vite, TypeScript |
+| Local stack | Docker Compose |
+| Containers | Docker |
+| Orchestration | Kubernetes, Minikube |
+| CI/CD | GitHub Actions |
+| Infrastructure | Terraform, Helm |
+| Metrics | Prometheus, Grafana |
+| Logs | Loki, Promtail |
+| Database | PostgreSQL |
+
+## Project Structure
 
 ```text
-backend/                  FastAPI API, Kubernetes orchestration, tests
-frontend/                 React dashboard with metrics charts and log viewer
-k8s/                      Namespace, deployments, services, HPA, ConfigMaps
-terraform/                Kubernetes namespace and Helm releases
-monitoring/               Prometheus, Grafana, and Alertmanager configuration
-logging/                  Loki and Promtail Helm/local values
-.github/workflows/        CI/CD pipeline for tests, DockerHub, and kubectl
-docker-compose.yml        Full local development stack
-Makefile                  Common local and Kubernetes commands
+backend/                  FastAPI backend
+frontend/                 React dashboard
+k8s/                      Kubernetes manifests
+terraform/                Terraform + Helm setup
+monitoring/               Prometheus, Grafana, Alertmanager config
+logging/                  Loki and Promtail config
+.github/workflows/        GitHub Actions pipeline
+docker-compose.yml        Local full-stack setup
+requirements.txt          Root Python dependency file
+Makefile                  Common commands
 ```
 
 ## Prerequisites
 
-- Docker and Docker Compose
+Install these tools:
+
+- Git
 - Python 3.12+
 - Node.js 22+
-- kubectl and Minikube for local Kubernetes
+- Docker Desktop
+- DockerHub account
+- kubectl
+- Minikube
 - Terraform 1.6+
-- DockerHub account for image publishing
+- Helm 3+
 
-## Local Development
+For only checking the backend/frontend locally, Python and Node are enough. For the full platform, Docker and Kubernetes tools are needed.
 
-1. Copy the example environment and set local-only passwords:
+## Install Dependencies
+
+### Backend Python Dependencies
+
+From the project root:
 
 ```bash
-cp .env.example .env
+python -m venv .venv
+.\.venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-1. Start the full local stack:
+The root `requirements.txt` installs the Python backend, testing, and linting dependencies.
+
+### Frontend Dependencies
+
+```bash
+cd frontend
+npm ci
+```
+
+Frontend packages are managed by `frontend/package.json` and `frontend/package-lock.json`.
+
+## Run Locally Without Docker
+
+Start backend:
+
+```bash
+cd backend
+..\.venv\Scripts\python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+If your shell does not like relative paths, activate the environment first:
+
+```bash
+..\.venv\Scripts\activate
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Start frontend in another terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open:
+
+```text
+Frontend: http://localhost:5173
+Backend docs: http://localhost:8000/docs
+```
+
+The backend uses safe mock deployment/observability data by default, so you can test the dashboard without a Kubernetes cluster.
+
+## Run Full Local Stack With Docker
+
+Copy the example environment file:
+
+```bash
+copy .env.example .env
+```
+
+Edit `.env` and set:
+
+```text
+POSTGRES_PASSWORD=your-local-password
+GRAFANA_ADMIN_PASSWORD=your-local-password
+```
+
+Start everything:
 
 ```bash
 make up
 ```
 
-1. Open the apps:
+Open:
 
 ```text
 InfraWatch dashboard: http://localhost:3000
@@ -73,101 +171,111 @@ Grafana:              http://localhost:3001
 Loki:                 http://localhost:3100
 ```
 
-The backend defaults to simulated deployment mode locally, so the dashboard can deploy demo services without requiring a live Kubernetes cluster.
+## Main API Endpoints
 
-## Backend API
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/deploy` | Trigger a deployment |
+| GET | `/deployments` | List deployments |
+| GET | `/metrics/{service}` | Get service metrics |
+| GET | `/logs/{service}` | Get service logs |
+| DELETE | `/deployment/{name}` | Delete a deployment |
+| GET | `/healthz` | Health check |
+| GET | `/internal/metrics` | Prometheus scrape endpoint |
 
-```text
-POST   /deploy              Trigger a service deployment
-GET    /deployments         List deployments and statuses
-GET    /metrics/{service}   Read Prometheus service metrics
-GET    /logs/{service}      Read the last 100 Loki log lines
-DELETE /deployment/{name}   Tear down a deployment
-GET    /healthz             Health check endpoint
-GET    /internal/metrics    Prometheus metrics for InfraWatch itself
-```
-
-Example deployment request:
+Example:
 
 ```bash
-curl -X POST http://localhost:8000/deploy \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "catalog-api",
-    "image": "docker.io/example/catalog-api:latest",
-    "replicas": 2,
-    "port": 8080,
-    "environment": {
-      "ENVIRONMENT": "production"
-    }
-  }'
+curl -X POST http://localhost:8000/deploy ^
+  -H "Content-Type: application/json" ^
+  -d "{\"name\":\"catalog-api\",\"image\":\"docker.io/example/catalog-api:latest\",\"replicas\":2,\"port\":8080}"
 ```
 
 ## Kubernetes Deployment
 
-1. Start Minikube:
+Start Minikube:
 
 ```bash
 minikube start
 ```
 
-1. Create runtime secrets from your own values:
+Create namespace and secrets:
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
-kubectl create secret generic infrawatch-secrets \
-  --namespace infrawatch \
-  --from-literal=POSTGRES_PASSWORD='use-a-strong-password' \
-  --from-literal=DATABASE_URL='postgresql://infrawatch:use-a-strong-password@infrawatch-postgres:5432/infrawatch'
+kubectl create secret generic infrawatch-secrets ^
+  --namespace infrawatch ^
+  --from-literal=POSTGRES_PASSWORD=use-a-strong-password ^
+  --from-literal=DATABASE_URL=postgresql://infrawatch:use-a-strong-password@infrawatch-postgres:5432/infrawatch
 ```
 
-1. Deploy application manifests:
+Deploy:
 
 ```bash
 make deploy
 ```
 
-1. Open the dashboard in Minikube:
+Open frontend:
 
 ```bash
 minikube service infrawatch-frontend --namespace infrawatch
 ```
 
-## Monitoring and Logging
+## Monitoring Setup
 
-Terraform installs the Helm-based monitoring stack:
+Terraform installs Prometheus, Grafana, Alertmanager, Loki, and Promtail through Helm.
 
 ```bash
 cd terraform
 terraform init
-terraform apply -var='grafana_admin_password=replace-with-a-strong-password'
+terraform apply -var="grafana_admin_password=replace-with-a-strong-password"
 ```
 
-Open Grafana:
+Open Grafana in Kubernetes mode:
 
 ```bash
 make monitor
 ```
 
-Provisioned assets include:
+## Where To Add DockerHub and Secrets
 
-- Prometheus scrape config and alert rules
-- Grafana dashboards for service health and Kubernetes cluster overview
-- Alertmanager local route plus email/Slack production template
-- Loki and Promtail Helm values for centralized logging
+Do not commit real passwords, tokens, or kubeconfig files.
 
-## CI/CD Setup
+| Value | Where to add it |
+|---|---|
+| DockerHub username | GitHub repo secret `DOCKERHUB_USERNAME` |
+| DockerHub token | GitHub repo secret `DOCKERHUB_TOKEN` |
+| Kubernetes config for CI/CD | GitHub repo secret `KUBE_CONFIG_B64` |
+| Local DB password | `.env` |
+| Local Grafana password | `.env` |
+| Kubernetes DB password | Kubernetes Secret `infrawatch-secrets` |
+| Backend config | `backend/.env` or Kubernetes ConfigMap |
+| Docker image names | `k8s/deployments/backend.yaml` and `k8s/deployments/frontend.yaml` |
 
-The GitHub Actions workflow runs on every push to `main`:
+GitHub secrets path:
 
-- Installs backend dependencies and runs `pytest`
-- Installs frontend dependencies and runs `npm run build`
-- Builds backend and frontend Docker images
-- Pushes DockerHub images tagged with the commit SHA and `latest`
-- Applies Kubernetes manifests with `kubectl`
-- Posts GitHub commit deployment status
+```text
+GitHub Repository -> Settings -> Secrets and variables -> Actions
+```
 
-Add these repository secrets before enabling production deployment:
+## GitHub Actions
+
+Workflow file:
+
+```text
+.github/workflows/ci-cd.yml
+```
+
+It does:
+
+- Backend install, lint, and tests
+- Frontend install, lint, and build
+- Docker image build
+- DockerHub push
+- Kubernetes deployment
+- GitHub commit deployment status
+
+Required secrets for full deployment:
 
 ```text
 DOCKERHUB_USERNAME
@@ -175,56 +283,35 @@ DOCKERHUB_TOKEN
 KUBE_CONFIG_B64
 ```
 
-Create `KUBE_CONFIG_B64` with:
+## Useful Commands
 
-```bash
-base64 -w 0 ~/.kube/config
-```
+| Command | Purpose |
+|---|---|
+| `python -m pip install -r requirements.txt` | Install Python dependencies |
+| `npm ci` | Install frontend dependencies |
+| `npm run build` | Build frontend |
+| `make up` | Start local Docker stack |
+| `make deploy` | Deploy Kubernetes manifests |
+| `make monitor` | Port-forward Grafana |
+| `make clean` | Clean Docker/Kubernetes resources |
+| `kubectl kustomize k8s` | Validate Kubernetes output |
+| `docker compose config` | Validate Docker Compose |
 
-## Deploying a New Service
+## Documentation
 
-Use the dashboard Deploy form or call the API:
-
-```bash
-curl -X POST "$INFRAWATCH_API/deploy" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "payments-api",
-    "image": "docker.io/acme/payments-api:2026.06.04",
-    "replicas": 3,
-    "port": 8080,
-    "environment": {
-      "ENVIRONMENT": "production"
-    }
-  }'
-```
-
-InfraWatch generates a Kubernetes Deployment and Service, applies resource requests and limits, annotates pods for Prometheus scraping, and records the deployment for the dashboard.
-
-## Screenshots
-
-Add screenshots here after the first hosted deployment:
+A detailed Word guide is saved locally at:
 
 ```text
-docs/screenshots/dashboard.png
-docs/screenshots/grafana-service-health.png
-docs/screenshots/deployment-flow.png
+C:\Users\Parth\Downloads\InfraWatch_Project_Guide.docx
 ```
 
-## Production Notes
-
-- Replace Docker image placeholders with your DockerHub organization.
-- Store secrets in GitHub Actions secrets, Kubernetes Secrets, or an external secret manager.
-- Use Terraform remote state for shared environments.
-- Enable managed PostgreSQL for production SaaS deployments.
-- Put the frontend behind TLS and configure CORS for the final domain.
-- Consider replacing local JSON deployment state with PostgreSQL tables before multi-tenant rollout.
+It explains project flow, prerequisites, package installation, DockerHub setup, GitHub secrets, Kubernetes secrets, and deployment steps.
 
 ## Roadmap
 
-- Multi-tenant organizations and RBAC
-- GitHub App integration for repository onboarding
-- AWS EKS and GCP GKE Terraform modules
-- Billing module for per-service and per-deployment pricing
-- Blue-green and canary deployments through Istio or Linkerd
-- SLO dashboards and incident timelines
+- Multi-tenant users and organizations
+- GitHub App integration
+- AWS EKS deployment module
+- Billing module
+- Canary and blue-green deployments
+- Better service-level SLO dashboards
