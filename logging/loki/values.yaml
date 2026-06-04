@@ -1,0 +1,23 @@
+# Helm values for Loki in the InfraWatch Kubernetes stack.
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+
+monitoring:
+  dashboards:
+    enabled: true
+  rules:
+    enabled: true

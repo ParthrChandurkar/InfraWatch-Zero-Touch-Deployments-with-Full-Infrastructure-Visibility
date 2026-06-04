@@ -1,0 +1,7 @@
+# Keep local-only files out of backend Docker build contexts.
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+*.pyc
+tests/

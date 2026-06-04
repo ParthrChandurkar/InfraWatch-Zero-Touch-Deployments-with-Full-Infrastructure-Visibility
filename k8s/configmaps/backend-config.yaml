@@ -1,0 +1,13 @@
+# Non-secret backend configuration for Kubernetes deployments.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: infrawatch-backend-config
+  namespace: infrawatch
+data:
+  INFRAWATCH_ENVIRONMENT: production
+  INFRAWATCH_EXECUTE_KUBECTL: "true"
+  INFRAWATCH_KUBECTL_NAMESPACE: infrawatch
+  INFRAWATCH_PROMETHEUS_URL: http://infrawatch-kube-prometheus-prometheus.infrawatch.svc.cluster.local:9090
+  INFRAWATCH_LOKI_URL: http://infrawatch-loki-gateway.infrawatch.svc.cluster.local
+  INFRAWATCH_STATE_FILE: /data/deployments.json

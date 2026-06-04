@@ -1,0 +1,23 @@
+# Helm values for Promtail in the InfraWatch Kubernetes stack.
+config:
+  clients:
+    - url: http://infrawatch-loki-gateway/loki/api/v1/push
+  snippets:
+    extraRelabelConfigs:
+      - source_labels:
+          - __meta_kubernetes_namespace
+        target_label: namespace
+      - source_labels:
+          - __meta_kubernetes_pod_name
+        target_label: pod
+      - source_labels:
+          - __meta_kubernetes_pod_label_app_kubernetes_io_name
+        target_label: app
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

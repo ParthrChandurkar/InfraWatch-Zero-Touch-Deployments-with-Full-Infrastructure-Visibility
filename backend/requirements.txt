@@ -1,0 +1,9 @@
+# Runtime and test dependencies for the InfraWatch FastAPI service.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic-settings==2.7.1
+httpx==0.28.1
+PyYAML==6.0.2
+prometheus-client==0.21.1
+pytest==8.3.4
+ruff==0.8.6

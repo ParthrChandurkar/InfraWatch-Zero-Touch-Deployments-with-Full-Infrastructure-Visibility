@@ -1,0 +1,42 @@
+# Python local state and bytecode.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node and frontend build outputs.
+node_modules/
+dist/
+build/
+coverage/
+npm-debug.log*
+
+# Secrets and machine-specific environment files.
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.kubeconfig
+
+# Terraform local state and downloaded providers.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+override.tf
+override.tf.json
+
+# OS and editor noise.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Codex/local verification artifacts.
+.codex-logs/

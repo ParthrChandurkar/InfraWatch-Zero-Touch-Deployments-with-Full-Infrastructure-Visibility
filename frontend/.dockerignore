@@ -1,0 +1,5 @@
+# Keep local-only files out of frontend Docker build contexts.
+node_modules/
+dist/
+.env
+npm-debug.log

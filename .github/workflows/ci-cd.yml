@@ -1,0 +1,162 @@
+# CI/CD pipeline for validating, building, publishing, and deploying InfraWatch.
+name: InfraWatch CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  validate:
+    name: Validate application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Lint backend
+        working-directory: backend
+        run: ruff check app tests
+
+      - name: Run backend tests
+        working-directory: backend
+        run: pytest
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Build backend image locally
+        run: docker build -t infrawatch-backend:test ./backend
+
+      - name: Build frontend image locally
+        run: docker build -t infrawatch-frontend:test ./frontend
+
+  deploy:
+    name: Publish and deploy
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+
+    steps:
+      - name: Mark deployment pending
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: "pending",
+              context: "InfraWatch deployment",
+              description: "InfraWatch build passed; deployment is starting."
+            });
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set Docker image names
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        run: |
+          echo "BACKEND_IMAGE=${DOCKERHUB_USERNAME}/infrawatch-backend" >> "$GITHUB_ENV"
+          echo "FRONTEND_IMAGE=${DOCKERHUB_USERNAME}/infrawatch-frontend" >> "$GITHUB_ENV"
+
+      - name: Log in to DockerHub
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        run: |
+          docker build \
+            -t "$BACKEND_IMAGE:${GITHUB_SHA}" \
+            -t "$BACKEND_IMAGE:latest" \
+            ./backend
+          docker push "$BACKEND_IMAGE:${GITHUB_SHA}"
+          docker push "$BACKEND_IMAGE:latest"
+
+      - name: Build and push frontend image
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        run: |
+          docker build \
+            --build-arg VITE_API_BASE_URL=/api \
+            -t "$FRONTEND_IMAGE:${GITHUB_SHA}" \
+            -t "$FRONTEND_IMAGE:latest" \
+            ./frontend
+          docker push "$FRONTEND_IMAGE:${GITHUB_SHA}"
+          docker push "$FRONTEND_IMAGE:latest"
+
+      - name: Configure kubectl
+        if: env.KUBE_CONFIG_B64 != ''
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG_B64" | base64 --decode > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Apply Kubernetes manifests
+        if: env.KUBE_CONFIG_B64 != ''
+        run: kubectl apply -k k8s
+
+      - name: Roll out new images
+        if: env.KUBE_CONFIG_B64 != '' && env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        run: |
+          kubectl set image deployment/infrawatch-backend backend="$BACKEND_IMAGE:${GITHUB_SHA}" --namespace infrawatch
+          kubectl set image deployment/infrawatch-frontend frontend="$FRONTEND_IMAGE:${GITHUB_SHA}" --namespace infrawatch
+          kubectl rollout status deployment/infrawatch-backend --namespace infrawatch --timeout=180s
+          kubectl rollout status deployment/infrawatch-frontend --namespace infrawatch --timeout=180s
+
+      - name: Mark deployment result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const state = "${{ job.status }}" === "success" ? "success" : "failure";
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state,
+              context: "InfraWatch deployment",
+              description: state === "success"
+                ? "InfraWatch pipeline completed."
+                : "InfraWatch deployment failed."
+            });

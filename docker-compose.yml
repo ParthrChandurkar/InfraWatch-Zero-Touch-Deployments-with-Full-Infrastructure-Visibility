@@ -1,0 +1,131 @@
+# Local development stack for InfraWatch.
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: infrawatch-backend
+    environment:
+      INFRAWATCH_ENVIRONMENT: development
+      INFRAWATCH_EXECUTE_KUBECTL: "false"
+      INFRAWATCH_PROMETHEUS_URL: http://prometheus:9090
+      INFRAWATCH_LOKI_URL: http://loki:3100
+      INFRAWATCH_STATE_FILE: /data/deployments.json
+      DATABASE_URL: postgresql://${POSTGRES_USER:-infrawatch}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-infrawatch}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-state:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+    networks:
+      - infrawatch
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    container_name: infrawatch-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - infrawatch
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: infrawatch-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-infrawatch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-infrawatch}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-infrawatch} -d ${POSTGRES_DB:-infrawatch}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - infrawatch
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: infrawatch-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    networks:
+      - infrawatch
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: infrawatch-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      - infrawatch
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: infrawatch-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - infrawatch
+
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: infrawatch-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    networks:
+      - infrawatch
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: infrawatch-promtail
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./logging/promtail/promtail-docker.yml:/etc/promtail/promtail.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    networks:
+      - infrawatch
+
+volumes:
+  backend-state:
+  postgres-data:
+  grafana-data:
+
+networks:
+  infrawatch:
+    driver: bridge

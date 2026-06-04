@@ -1,0 +1,109 @@
+# Helm values for kube-prometheus-stack in the InfraWatch namespace.
+fullnameOverride: infrawatch-kube-prometheus
+
+grafana:
+  enabled: true
+  defaultDashboardsEnabled: true
+  adminUser: admin
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+
+prometheus:
+  service:
+    type: ClusterIP
+  prometheusSpec:
+    retention: 7d
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi
+    additionalScrapeConfigs:
+      - job_name: infrawatch-backend
+        metrics_path: /internal/metrics
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - infrawatch
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+            regex: infrawatch-backend
+            action: keep
+          - source_labels:
+              - __meta_kubernetes_pod_container_port_name
+            regex: http
+            action: keep
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+additionalPrometheusRulesMap:
+  infrawatch-rules:
+    groups:
+      - name: infrawatch.rules
+        rules:
+          - alert: ServiceDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: Service is down
+              description: Prometheus could not scrape a target for more than 1 minute.
+          - alert: HighCpuUsage
+            expr: sum(rate(container_cpu_usage_seconds_total{namespace="infrawatch"}[5m])) by (pod) > 0.8
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: Pod CPU usage above 80 percent
+              description: A pod has been consuming high CPU for at least 5 minutes.
+          - alert: PodCrashLooping
+            expr: max_over_time(kube_pod_container_status_waiting_reason{namespace="infrawatch",reason="CrashLoopBackOff"}[5m]) >= 1
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: Pod is crash looping
+              description: A pod has been in CrashLoopBackOff.
