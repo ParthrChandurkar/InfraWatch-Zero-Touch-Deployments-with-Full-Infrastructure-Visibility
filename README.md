@@ -1,6 +1,6 @@
-# InfraWatch
+# InfraWatch: Zero-Touch Deployments with Full Infrastructure Visibility
 
-InfraWatch is a cloud-native deployment and monitoring platform. It lets a team deploy containerized microservices and watch their status, metrics, and logs from one dashboard.
+InfraWatch: Zero-Touch Deployments with Full Infrastructure Visibility is a cloud-native deployment and monitoring platform. It lets a team deploy containerized microservices and watch their status, metrics, and logs from one dashboard.
 
 Think of it as a small internal Heroku plus Grafana:
 
@@ -11,7 +11,9 @@ Think of it as a small internal Heroku plus Grafana:
 - Run locally with Docker Compose
 - Deploy to Kubernetes with CI/CD support
 
-## How It Works
+## Architecture Diagram
+
+**Diagram name:** InfraWatch End-to-End Architecture
 
 ```mermaid
 flowchart LR
