@@ -10,6 +10,7 @@ services:
       INFRAWATCH_PROMETHEUS_URL: http://prometheus:9090
       INFRAWATCH_LOKI_URL: http://loki:3100
       INFRAWATCH_STATE_FILE: /data/deployments.json
+      INFRAWATCH_AUDIT_FILE: /data/audit-log.json
       DATABASE_URL: postgresql://${POSTGRES_USER:-infrawatch}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-infrawatch}
     ports:
       - "8000:8000"

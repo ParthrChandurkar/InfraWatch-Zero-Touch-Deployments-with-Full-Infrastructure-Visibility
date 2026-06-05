@@ -398,7 +398,7 @@ a {
     "service service deploy deploy"
     "cpu memory requests errors"
     "fleet fleet logs logs"
-    "fleet fleet readiness readiness";
+    "fleet fleet audit readiness";
   gap: 14px;
   min-width: 0;
 }
@@ -433,6 +433,10 @@ a {
 
 .logs-panel {
   grid-area: logs;
+}
+
+.audit-panel {
+  grid-area: audit;
 }
 
 .readiness-panel {
@@ -677,6 +681,71 @@ td {
   white-space: pre-wrap;
 }
 
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.audit-entry {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #2b3540;
+  border-radius: 8px;
+  background: #0c1117;
+}
+
+.audit-marker {
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #3ddc97;
+}
+
+.audit-entry.failure .audit-marker {
+  background: #ff6b7a;
+}
+
+.audit-entry.warning .audit-marker {
+  background: #f1c75b;
+}
+
+.audit-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.audit-topline strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f4f7fb;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-topline time,
+.audit-entry span {
+  color: #9aa4b2;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.audit-entry p {
+  margin: 5px 0 4px;
+  color: #dce5ef;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .signal {
   display: flex;
   align-items: center;
@@ -739,7 +808,8 @@ td {
       "cpu memory"
       "requests errors"
       "fleet fleet"
-      "logs logs";
+      "logs logs"
+      "audit audit";
   }
 }
 
@@ -793,7 +863,8 @@ td {
       "errors"
       "readiness"
       "fleet"
-      "logs";
+      "logs"
+      "audit";
   }
 
   .header-actions a {

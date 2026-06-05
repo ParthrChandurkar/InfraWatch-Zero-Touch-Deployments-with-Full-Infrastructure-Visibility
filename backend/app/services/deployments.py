@@ -12,7 +12,7 @@ from typing import Any
 import yaml
 
 from app.config import Settings
-from app.repository import FileDeploymentRepository, utc_now
+from app.repository import FileAuditLogRepository, FileDeploymentRepository, utc_now
 from app.schemas import DeploymentRecord, DeploymentRequest, DeploymentResponse, DeploymentStatus
 
 
@@ -23,14 +23,25 @@ class DeploymentExecutionError(RuntimeError):
 class DeploymentService:
     """Coordinates deployment persistence and Kubernetes operations."""
 
-    def __init__(self, settings: Settings, repository: FileDeploymentRepository) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        repository: FileDeploymentRepository,
+        audit_repository: FileAuditLogRepository,
+    ) -> None:
         self._settings = settings
         self._repository = repository
+        self._audit_repository = audit_repository
 
     def list_deployments(self) -> list[DeploymentRecord]:
         """List deployments known by InfraWatch."""
 
         return self._repository.list()
+
+    def list_audit_logs(self, limit: int = 100):
+        """List newest audit log entries."""
+
+        return self._audit_repository.list(limit=limit)
 
     def deploy(self, request: DeploymentRequest) -> DeploymentResponse:
         """Create or update Kubernetes resources for a service."""
@@ -59,13 +70,43 @@ class DeploymentService:
             updated_at=now,
         )
         self._repository.upsert(record)
+        self._audit_repository.append(
+            action="deployment.simulated" if not self._settings.execute_kubectl else "deployment.requested",
+            service=record.name,
+            status="success",
+            message=record.message,
+            metadata={
+                "image": record.image,
+                "namespace": record.namespace,
+                "replicas": record.replicas,
+                "port": record.port,
+                "mode": "kubernetes" if self._settings.execute_kubectl else "local-demo",
+            },
+        )
 
         if self._settings.execute_kubectl:
-            self._kubectl_apply(manifest)
+            try:
+                self._kubectl_apply(manifest)
+            except DeploymentExecutionError:
+                self._audit_repository.append(
+                    action="deployment.failed",
+                    service=record.name,
+                    status="failure",
+                    message="Kubernetes apply failed.",
+                    metadata={"namespace": record.namespace, "image": record.image},
+                )
+                raise
             record.status = DeploymentStatus.running
             record.message = "Kubernetes resources applied successfully."
             record.updated_at = utc_now()
             self._repository.upsert(record)
+            self._audit_repository.append(
+                action="deployment.applied",
+                service=record.name,
+                status="success",
+                message=record.message,
+                metadata={"namespace": record.namespace, "image": record.image},
+            )
 
         return DeploymentResponse(deployment=record, kubernetes_manifest=manifest)
 
@@ -74,12 +115,36 @@ class DeploymentService:
 
         existing = self._repository.get(name)
         if existing is None:
+            self._audit_repository.append(
+                action="deployment.delete_missing",
+                service=name,
+                status="not_found",
+                message="Delete requested for a deployment that does not exist.",
+            )
             return None
 
         if self._settings.execute_kubectl:
-            self._kubectl_delete(existing.name, existing.namespace)
+            try:
+                self._kubectl_delete(existing.name, existing.namespace)
+            except DeploymentExecutionError:
+                self._audit_repository.append(
+                    action="deployment.delete_failed",
+                    service=existing.name,
+                    status="failure",
+                    message="Kubernetes delete failed.",
+                    metadata={"namespace": existing.namespace},
+                )
+                raise
 
-        return self._repository.delete(name)
+        deleted = self._repository.delete(name)
+        self._audit_repository.append(
+            action="deployment.deleted",
+            service=existing.name,
+            status="success",
+            message="Deployment removed from InfraWatch state.",
+            metadata={"namespace": existing.namespace, "image": existing.image},
+        )
+        return deleted
 
     def _build_manifest(self, request: DeploymentRequest, namespace: str) -> dict[str, Any]:
         """Build a Kubernetes List manifest for the service workload."""

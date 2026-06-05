@@ -12,6 +12,7 @@ def build_client(tmp_path) -> TestClient:
     settings = Settings(
         environment="test",
         state_file=str(tmp_path / "deployments.json"),
+        audit_file=str(tmp_path / "audit-log.json"),
         execute_kubectl=False,
         allow_mock_observability=True,
     )
@@ -50,6 +51,13 @@ def test_deployment_lifecycle(tmp_path) -> None:
     assert deleted.status_code == 200
     assert deleted.json()["status"] == "deleted"
 
+    audit_logs = client.get("/audit-logs")
+    assert audit_logs.status_code == 200
+    events = audit_logs.json()
+    assert events[0]["action"] == "deployment.deleted"
+    assert events[0]["service"] == "catalog-api"
+    assert events[1]["action"] == "deployment.simulated"
+
 
 def test_unknown_deployment_delete_returns_404(tmp_path) -> None:
     """Deleting a missing deployment returns a correct HTTP error."""
@@ -57,3 +65,7 @@ def test_unknown_deployment_delete_returns_404(tmp_path) -> None:
     client = build_client(tmp_path)
     response = client.delete("/deployment/missing-api")
     assert response.status_code == 404
+
+    audit_logs = client.get("/audit-logs")
+    assert audit_logs.status_code == 200
+    assert audit_logs.json()[0]["action"] == "deployment.delete_missing"

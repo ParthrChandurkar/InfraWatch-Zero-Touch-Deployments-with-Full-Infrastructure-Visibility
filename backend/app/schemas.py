@@ -68,6 +68,19 @@ class DeploymentResponse(BaseModel):
     kubernetes_manifest: dict[str, Any]
 
 
+class AuditLogEntry(BaseModel):
+    """Immutable operational event recorded by InfraWatch."""
+
+    id: str
+    action: str
+    service: str | None = None
+    actor: str = "system"
+    status: str
+    message: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime
+
+
 class MetricPoint(BaseModel):
     """Single time-series point returned to the React dashboard."""
 

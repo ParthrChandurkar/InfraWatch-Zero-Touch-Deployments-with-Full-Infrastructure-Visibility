@@ -4,10 +4,10 @@ Routes are intentionally thin and delegate orchestration to services stored on
 FastAPI application state.
 """
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from prometheus_client import Counter, Histogram
 
-from app.schemas import DeploymentRequest, DeploymentResponse, LogsResponse, ServiceMetrics
+from app.schemas import AuditLogEntry, DeploymentRequest, DeploymentResponse, LogsResponse, ServiceMetrics
 from app.services.deployments import DeploymentExecutionError
 
 DEPLOYMENT_COUNTER = Counter("infrawatch_deployments_total", "Deployment actions accepted by InfraWatch")
@@ -48,6 +48,16 @@ def build_router() -> APIRouter:
 
         with REQUEST_TIMER.labels(route="/deployments").time():
             return request.app.state.deployment_service.list_deployments()
+
+    @router.get("/audit-logs", response_model=list[AuditLogEntry], tags=["audit"])
+    async def audit_logs(
+        request: Request,
+        limit: int = Query(default=50, ge=1, le=200),
+    ) -> list[AuditLogEntry]:
+        """List recent operational actions recorded by InfraWatch."""
+
+        with REQUEST_TIMER.labels(route="/audit-logs").time():
+            return request.app.state.deployment_service.list_audit_logs(limit=limit)
 
     @router.get("/metrics/{service}", response_model=ServiceMetrics, tags=["observability"])
     async def metrics(service: str, request: Request) -> ServiceMetrics:

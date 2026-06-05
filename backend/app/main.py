@@ -11,7 +11,7 @@ from starlette.responses import Response
 
 from app.api import build_router
 from app.config import Settings, get_settings
-from app.repository import FileDeploymentRepository
+from app.repository import FileAuditLogRepository, FileDeploymentRepository
 from app.services.deployments import DeploymentService
 from app.services.observability import LokiClient, PrometheusClient
 
@@ -35,8 +35,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     repository = FileDeploymentRepository(active_settings.state_file)
+    audit_repository = FileAuditLogRepository(active_settings.audit_file)
     app.state.settings = active_settings
-    app.state.deployment_service = DeploymentService(active_settings, repository)
+    app.state.deployment_service = DeploymentService(active_settings, repository, audit_repository)
     app.state.prometheus_client = PrometheusClient(active_settings)
     app.state.loki_client = LokiClient(active_settings)
 

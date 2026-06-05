@@ -11,6 +11,10 @@ Think of it as a small internal Heroku plus Grafana:
 - Run locally with Docker Compose
 - Deploy to Kubernetes with CI/CD support
 
+## Project Screenshot
+
+![InfraWatch Command Center](docs/screenshots/infrawatch-command-center.png)
+
 ## Architecture Diagram
 
 **Diagram name:** InfraWatch End-to-End Architecture

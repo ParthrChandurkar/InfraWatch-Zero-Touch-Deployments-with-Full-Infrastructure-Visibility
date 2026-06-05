@@ -47,3 +47,14 @@ export interface LogsResponse {
   lines: LogLine[];
   source: string;
 }
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  service?: string;
+  actor: string;
+  status: string;
+  message: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}

@@ -34,9 +34,11 @@ import {
   deployService,
   getLogs,
   getMetrics,
+  listAuditLogs,
   listDeployments,
 } from "./api";
 import type {
+  AuditLogEntry,
   DeploymentRecord,
   DeploymentStatus,
   LogsResponse,
@@ -66,6 +68,7 @@ function App() {
   const [selected, setSelected] = useState<string>("");
   const [metrics, setMetrics] = useState<ServiceMetrics>(EMPTY_METRICS);
   const [logs, setLogs] = useState<LogsResponse>(EMPTY_LOGS);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeploying, setIsDeploying] = useState(false);
   const [error, setError] = useState("");
@@ -101,6 +104,11 @@ function App() {
     setSelected((current) => items.find((item) => item.name === current)?.name ?? items[0]?.name ?? "");
   }, []);
 
+  const refreshAuditLogs = useCallback(async () => {
+    const entries = await listAuditLogs(30);
+    setAuditLogs(entries);
+  }, []);
+
   const refreshObservability = useCallback(async (serviceName: string) => {
     const [metricResponse, logResponse] = await Promise.all([
       getMetrics(serviceName),
@@ -112,13 +120,13 @@ function App() {
 
   useEffect(() => {
     let isMounted = true;
-    refreshDeployments()
+    Promise.all([refreshDeployments(), refreshAuditLogs()])
       .catch((reason: Error) => isMounted && setError(reason.message))
       .finally(() => isMounted && setIsLoading(false));
     return () => {
       isMounted = false;
     };
-  }, [refreshDeployments]);
+  }, [refreshAuditLogs, refreshDeployments]);
 
   useEffect(() => {
     const serviceName = selectedDeployment?.name;
@@ -148,6 +156,7 @@ function App() {
     setError("");
     try {
       await refreshDeployments();
+      await refreshAuditLogs();
       if (selectedDeployment?.name) {
         await refreshObservability(selectedDeployment.name);
       }
@@ -169,6 +178,7 @@ function App() {
         environment: { ENVIRONMENT: "production" },
       });
       await refreshDeployments();
+      await refreshAuditLogs();
       setSelected(response.deployment.name);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Deployment failed");
@@ -182,6 +192,7 @@ function App() {
     try {
       await deleteDeployment(name);
       await refreshDeployments();
+      await refreshAuditLogs();
       setSelected("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Delete failed");
@@ -494,6 +505,37 @@ function App() {
             </div>
           </section>
 
+          <section className="panel audit-panel">
+            <div className="panel-heading">
+              <div>
+                <span className="section-kicker">Audit Trail</span>
+                <h2><ShieldCheck size={18} /> Recent Actions</h2>
+              </div>
+              <span className="data-source">{auditLogs.length} events</span>
+            </div>
+            <div className="audit-list">
+              {auditLogs.map((entry) => (
+                <div className={`audit-entry ${auditTone(entry.status)}`} key={entry.id}>
+                  <span className="audit-marker" />
+                  <div>
+                    <div className="audit-topline">
+                      <strong>{formatAuditAction(entry.action)}</strong>
+                      <time>{relativeTime(entry.created_at)}</time>
+                    </div>
+                    <p>{entry.message}</p>
+                    <span>{entry.service ?? "platform"} / {entry.actor}</span>
+                  </div>
+                </div>
+              ))}
+              {!auditLogs.length && (
+                <div className="empty-log">
+                  <ShieldCheck size={18} />
+                  <span>No audit events yet</span>
+                </div>
+              )}
+            </div>
+          </section>
+
           <section className="panel readiness-panel">
             <div className="panel-heading">
               <div>
@@ -612,6 +654,24 @@ function sourceLabel(source: string) {
     return "Waiting";
   }
   return source.charAt(0).toUpperCase() + source.slice(1);
+}
+
+function auditTone(status: string) {
+  if (status === "failure") {
+    return "failure";
+  }
+  if (status === "not_found") {
+    return "warning";
+  }
+  return "success";
+}
+
+function formatAuditAction(action: string) {
+  return action
+    .split(".")
+    .map((part) => part.replace(/_/g, " "))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function buildDemoChartData(serviceName: string) {

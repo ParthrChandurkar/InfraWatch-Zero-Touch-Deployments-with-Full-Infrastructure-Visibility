@@ -1,5 +1,5 @@
 // Thin API wrapper around the InfraWatch backend REST endpoints.
-import type { DeployPayload, DeploymentRecord, LogsResponse, ServiceMetrics } from "./types";
+import type { AuditLogEntry, DeployPayload, DeploymentRecord, LogsResponse, ServiceMetrics } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -43,4 +43,8 @@ export function getMetrics(service: string): Promise<ServiceMetrics> {
 
 export function getLogs(service: string): Promise<LogsResponse> {
   return request<LogsResponse>(`/logs/${service}`);
+}
+
+export function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
+  return request<AuditLogEntry[]>(`/audit-logs?limit=${limit}`);
 }
