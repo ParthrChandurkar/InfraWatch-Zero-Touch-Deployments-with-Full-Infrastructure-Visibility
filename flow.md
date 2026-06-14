@@ -9,6 +9,14 @@ Think of it like this:
 - `localhost:9090` is Prometheus, the metrics collector.
 - `localhost:8000/docs` is the backend API manual.
 
+Quick mental model:
+
+- A developer asks the platform to deploy or remove a service.
+- FastAPI records the action and returns the current service state.
+- Docker or Kubernetes runs the service.
+- Prometheus, Loki, and PostgreSQL provide the operational evidence.
+- React turns that evidence into a dashboard a reviewer can understand quickly.
+
 ## 1. What Problem This Project Solves
 
 In a real company, one website is usually made of many smaller services.
@@ -58,7 +66,23 @@ GitHub Push -> GitHub Actions CI/CD -> DockerHub Images
                     Grafana Dashboards + Alerts
 ```
 
-## 3. What Each Part Does
+Three flows happen together:
+
+- Delivery flow: GitHub Actions builds, tests, publishes images, and prepares deployment.
+- Runtime flow: Docker Compose or Kubernetes runs the frontend, backend, database, and observability services.
+- Visibility flow: Prometheus collects metrics, Loki stores logs, audit events record changes, and the dashboard presents the story.
+
+## 3. Request And Signal Lifecycle
+
+1. A user opens the dashboard and creates a deployment request.
+2. The React frontend sends the request to the FastAPI backend.
+3. FastAPI validates the request and records an audit event.
+4. In local mode, the backend returns safe demo deployment data.
+5. In Kubernetes mode, manifests and cluster APIs handle real rollout behavior.
+6. Prometheus and Loki expose runtime metrics and logs.
+7. The dashboard combines deployment state, telemetry, logs, and audit history for review.
+
+## 4. What Each Part Does
 
 | Part | Meaning |
 |---|---|
@@ -69,11 +93,12 @@ GitHub Push -> GitHub Actions CI/CD -> DockerHub Images
 | Grafana | Shows monitoring dashboards from Prometheus and Loki. |
 | Loki | Stores logs. |
 | Promtail | Sends container logs to Loki. |
+| Audit trail | Records deployment and delete activity for accountability. |
 | Docker Compose | Runs the full project locally. |
 | Kubernetes | Production-style deployment target. |
 | GitHub Actions | CI/CD pipeline for tests, builds, images, and deployment. |
 
-## 4. Prerequisites
+## 5. Prerequisites
 
 Install these:
 
@@ -85,7 +110,7 @@ Install these:
 
 For the full local demo, Docker Desktop is the most important tool.
 
-## 5. Run The Full Project Locally
+## 6. Run The Full Project Locally
 
 Open PowerShell in the project root:
 
@@ -112,7 +137,7 @@ Start everything:
 docker compose up --build
 ```
 
-## 6. Open The Project
+## 7. Open The Project
 
 After Docker starts, open:
 
@@ -131,7 +156,7 @@ Username: admin
 Password: value from GRAFANA_ADMIN_PASSWORD in .env
 ```
 
-## 7. How To Use The Dashboard
+## 8. How To Use The Dashboard
 
 1. Open `http://localhost:3000`.
 2. Look at the left sidebar named `Service Fleet`.
@@ -157,7 +182,7 @@ Port: 8080
 10. Check `Runtime Logs` for log output.
 11. Check `Audit Trail` to prove the deploy/delete action was recorded.
 
-## 8. Audit Log Feature
+## 9. Audit Log Feature
 
 The audit log records important operational actions.
 
@@ -190,7 +215,7 @@ Why this matters:
 - It creates accountability.
 - It is an industry-level feature because real platforms need audit trails.
 
-## 9. Backend API Endpoints
+## 10. Backend API Endpoints
 
 | Method | Endpoint | Purpose |
 |---|---|---|
@@ -203,7 +228,7 @@ Why this matters:
 | `GET` | `/healthz` | Backend health check. |
 | `GET` | `/internal/metrics` | Prometheus scrape endpoint. |
 
-## 10. Demo Script
+## 11. Demo Script
 
 Use this in front of a reviewer:
 
@@ -221,7 +246,7 @@ For a platform like Wellfound, services such as jobs-api, profiles-api, search-s
 This helps teams release faster, debug faster, and understand what changed in production.
 ```
 
-## 11. Stop The Project
+## 12. Stop The Project
 
 Stop running containers:
 
@@ -235,7 +260,7 @@ Stop and remove saved volumes:
 docker compose down --volumes --remove-orphans
 ```
 
-## 12. Kubernetes Demo Mode
+## 13. Kubernetes Demo Mode
 
 Start Minikube:
 
@@ -265,7 +290,7 @@ Open frontend:
 minikube service infrawatch-frontend --namespace infrawatch
 ```
 
-## 13. GitHub Actions CI/CD Flow
+## 14. GitHub Actions CI/CD Flow
 
 When code is pushed to `main`:
 
@@ -287,7 +312,7 @@ DOCKERHUB_TOKEN
 KUBE_CONFIG_B64
 ```
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 | Problem | Fix |
 |---|---|
@@ -298,7 +323,7 @@ KUBE_CONFIG_B64
 | Charts show demo baseline | Prometheus has no real service samples yet, so the frontend shows demo-safe telemetry. |
 | Audit logs are empty | Deploy or delete a service from the dashboard first. |
 
-## 15. What Makes This Industry-Level For Demo
+## 16. What Makes This Industry-Level For Demo
 
 - Full Docker Compose stack
 - FastAPI backend
