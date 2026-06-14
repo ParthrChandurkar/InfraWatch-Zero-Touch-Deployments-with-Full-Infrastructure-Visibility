@@ -1,15 +1,25 @@
 # InfraWatch: Zero-Touch Deployments with Full Infrastructure Visibility
 
-InfraWatch: Zero-Touch Deployments with Full Infrastructure Visibility is a cloud-native deployment and monitoring platform. It lets a team deploy containerized microservices and watch their status, metrics, and logs from one dashboard.
+InfraWatch is a cloud-native DevOps control plane for deploying containerized services and watching their infrastructure signals from one dashboard. It combines a deployment API, a React command center, Prometheus metrics, Loki logs, Grafana dashboards, Docker Compose, Kubernetes manifests, Terraform/Helm infrastructure, and GitHub Actions CI/CD.
 
-Think of it as a small internal Heroku plus Grafana:
+Think of it as a compact internal platform: a team can ship a service, inspect health, read logs, and prove what changed without jumping between five tools.
 
-- Deploy services from a dashboard or API
-- Track deployment status
-- View CPU, memory, request-rate, and error-rate charts
-- Read recent service logs
-- Run locally with Docker Compose
-- Deploy to Kubernetes with CI/CD support
+## What You Can Demo
+
+- Trigger service deployments from the dashboard or the FastAPI API.
+- Track service inventory, replica counts, rollout state, and failures.
+- Inspect CPU, memory, request-rate, and error-rate telemetry.
+- Read recent service logs and audit events in the same workflow.
+- Run the full stack locally with Docker Compose.
+- Move toward Kubernetes delivery with CI/CD, DockerHub, Terraform, Helm, Prometheus, Grafana, Loki, and Promtail.
+
+## Fast Reviewer Path
+
+1. Run the full stack with `make up` or `docker compose up --build`.
+2. Open `http://localhost:3000` for the InfraWatch dashboard.
+3. Deploy a demo service such as `jobs-api`.
+4. Open the selected service and review metrics, logs, deployment inventory, and audit trail.
+5. Open Grafana at `http://localhost:3001` for deeper monitoring.
 
 ## Project Screenshot
 
