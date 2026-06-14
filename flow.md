@@ -182,6 +182,16 @@ Port: 8080
 10. Check `Runtime Logs` for log output.
 11. Check `Audit Trail` to prove the deploy/delete action was recorded.
 
+Expected proof on screen:
+
+| Dashboard area | What to point out |
+|---|---|
+| Service Fleet | Shows all known services and their health state. |
+| Top summary cards | Shows health score, running services, replicas, and failures. |
+| Metrics panels | Shows CPU, memory, throughput, and error rate for the selected service. |
+| Runtime Logs | Shows recent service events without leaving the dashboard. |
+| Audit Trail | Shows who changed what and when. |
+
 ## 9. Audit Log Feature
 
 The audit log records important operational actions.
@@ -246,7 +256,24 @@ For a platform like Wellfound, services such as jobs-api, profiles-api, search-s
 This helps teams release faster, debug faster, and understand what changed in production.
 ```
 
-## 12. Stop The Project
+Reviewer proof points:
+
+- The platform has a real FastAPI backend and typed React frontend.
+- The local stack includes PostgreSQL, Prometheus, Grafana, Loki, and Promtail.
+- The API surface covers deploy, delete, metrics, logs, health, and audit events.
+- The documentation explains both local demo mode and Kubernetes delivery mode.
+- The CI/CD flow is wired for linting, testing, image publishing, and deployment.
+
+## 12. Local vs Kubernetes Mode
+
+| Mode | Best for | Behavior |
+|---|---|---|
+| Local Docker Compose | Fast reviewer demo and development | Runs the dashboard, backend, database, metrics, logs, and Grafana together on localhost. |
+| Safe demo backend | UI and API walkthrough without a cluster | Returns controlled deployment and telemetry data so the dashboard remains usable. |
+| Kubernetes mode | Production-style deployment story | Uses manifests, namespace, secrets, service definitions, and rollout commands. |
+| CI/CD mode | GitHub-to-runtime release story | Uses GitHub Actions, DockerHub credentials, and Kubernetes config secrets when available. |
+
+## 13. Stop The Project
 
 Stop running containers:
 
@@ -260,7 +287,7 @@ Stop and remove saved volumes:
 docker compose down --volumes --remove-orphans
 ```
 
-## 13. Kubernetes Demo Mode
+## 14. Kubernetes Demo Mode
 
 Start Minikube:
 
@@ -290,7 +317,7 @@ Open frontend:
 minikube service infrawatch-frontend --namespace infrawatch
 ```
 
-## 14. GitHub Actions CI/CD Flow
+## 15. GitHub Actions CI/CD Flow
 
 When code is pushed to `main`:
 
@@ -312,7 +339,7 @@ DOCKERHUB_TOKEN
 KUBE_CONFIG_B64
 ```
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 | Problem | Fix |
 |---|---|
@@ -323,7 +350,7 @@ KUBE_CONFIG_B64
 | Charts show demo baseline | Prometheus has no real service samples yet, so the frontend shows demo-safe telemetry. |
 | Audit logs are empty | Deploy or delete a service from the dashboard first. |
 
-## 16. What Makes This Industry-Level For Demo
+## 17. What Makes This Industry-Level For Demo
 
 - Full Docker Compose stack
 - FastAPI backend
