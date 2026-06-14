@@ -44,15 +44,17 @@ flowchart LR
     API --> UI[React Dashboard]
 ```
 
-Basic flow:
+System flow:
 
 1. Developer pushes code to GitHub.
 2. GitHub Actions runs tests and builds Docker images.
 3. Images are pushed to DockerHub.
 4. Kubernetes applies the latest deployment.
-5. Prometheus collects metrics.
-6. Loki collects logs.
-7. React dashboard shows deployments, charts, and logs through the FastAPI backend.
+5. Prometheus collects service metrics.
+6. Loki collects runtime logs through Promtail.
+7. FastAPI exposes deployment, metrics, logs, health, and audit APIs.
+8. React turns those signals into a single command-center dashboard.
+9. Grafana provides deeper operational dashboards for infrastructure review.
 
 ## Tech Stack
 
@@ -79,6 +81,7 @@ terraform/                Terraform + Helm setup
 monitoring/               Prometheus, Grafana, Alertmanager config
 logging/                  Loki and Promtail config
 .github/workflows/        GitHub Actions pipeline
+docs/screenshots/         README and demo images
 docker-compose.yml        Local full-stack setup
 requirements.txt          Root Python dependency file
 Makefile                  Common commands
@@ -187,12 +190,21 @@ Grafana:              http://localhost:3001
 Loki:                 http://localhost:3100
 ```
 
+Demo checklist:
+
+- Confirm the dashboard loads and service fleet cards render.
+- Deploy a sample service such as `jobs-api`.
+- Open the deployed service and review metrics, logs, and current status.
+- Confirm the audit trail records the deploy action.
+- Open Grafana to show the monitoring layer behind the product UI.
+
 ## Main API Endpoints
 
 | Method | Endpoint | Purpose |
 |---|---|---|
 | POST | `/deploy` | Trigger a deployment |
 | GET | `/deployments` | List deployments |
+| GET | `/audit-logs` | List deployment and delete audit events |
 | GET | `/metrics/{service}` | Get service metrics |
 | GET | `/logs/{service}` | Get service logs |
 | DELETE | `/deployment/{name}` | Delete a deployment |
@@ -306,6 +318,8 @@ KUBE_CONFIG_B64
 | `python -m pip install -r requirements.txt` | Install Python dependencies |
 | `npm ci` | Install frontend dependencies |
 | `npm run build` | Build frontend |
+| `docker compose up --build` | Start the complete local stack |
+| `docker compose ps` | Inspect running containers |
 | `make up` | Start local Docker stack |
 | `make deploy` | Deploy Kubernetes manifests |
 | `make monitor` | Port-forward Grafana |
@@ -315,13 +329,11 @@ KUBE_CONFIG_B64
 
 ## Documentation
 
-A detailed Word guide is saved locally at:
-
-```text
-C:\Users\Parth\Downloads\InfraWatch_Project_Guide.docx
-```
-
-It explains project flow, prerequisites, package installation, DockerHub setup, GitHub secrets, Kubernetes secrets, and deployment steps.
+| File | Purpose |
+|---|---|
+| `flow.md` | Reviewer-friendly project flow, demo script, API tour, and troubleshooting. |
+| `docs/screenshots/infrawatch-command-center.png` | Main dashboard screenshot used by the README. |
+| `.github/workflows/ci-cd.yml` | CI/CD pipeline for lint, tests, build, image publishing, and deployment. |
 
 ## Roadmap
 
