@@ -20,10 +20,18 @@ def build_router() -> APIRouter:
     router = APIRouter()
 
     @router.get("/healthz", tags=["system"])
-    async def healthz() -> dict[str, str]:
-        """Return a lightweight health signal for probes and load balancers."""
+    async def healthz(request: Request) -> dict[str, str | bool]:
+        """Return health and an honest summary of active platform capabilities."""
 
-        return {"status": "ok"}
+        settings = request.app.state.settings
+        return {
+            "status": "ok",
+            "environment": settings.environment,
+            "fastapi": True,
+            "kubernetes_execution": settings.execute_kubectl,
+            "deployment_mode": "kubernetes" if settings.execute_kubectl else "manifest-simulation",
+            "observability_mode": "prometheus-loki" if not settings.allow_mock_observability else "fallback-enabled",
+        }
 
     @router.post(
         "/deploy",

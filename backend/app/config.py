@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     state_file: str = "/tmp/infrawatch/deployments.json"
     audit_file: str = "/tmp/infrawatch/audit-log.json"
     execute_kubectl: bool = False
+    seed_demo_data: bool = False
     kubectl_binary: str = "kubectl"
     kubectl_namespace: str = "infrawatch"
 

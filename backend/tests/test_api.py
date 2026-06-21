@@ -35,6 +35,11 @@ def test_deployment_lifecycle(tmp_path) -> None:
     assert deploy_response.status_code == 202
     assert deploy_response.json()["deployment"]["status"] == "Running"
 
+    health = client.get("/healthz")
+    assert health.status_code == 200
+    assert health.json()["fastapi"] is True
+    assert health.json()["deployment_mode"] == "manifest-simulation"
+
     deployments = client.get("/deployments")
     assert deployments.status_code == 200
     assert deployments.json()[0]["name"] == "catalog-api"
@@ -69,3 +74,21 @@ def test_unknown_deployment_delete_returns_404(tmp_path) -> None:
     audit_logs = client.get("/audit-logs")
     assert audit_logs.status_code == 200
     assert audit_logs.json()[0]["action"] == "deployment.delete_missing"
+
+
+def test_hosted_demo_can_seed_sample_services(tmp_path) -> None:
+    """Hosted demo runtimes start with useful sample data when explicitly enabled."""
+
+    settings = Settings(
+        environment="vercel-demo",
+        state_file=str(tmp_path / "deployments.json"),
+        audit_file=str(tmp_path / "audit-log.json"),
+        execute_kubectl=False,
+        seed_demo_data=True,
+        allow_mock_observability=True,
+    )
+    client = TestClient(create_app(settings))
+
+    deployments = client.get("/deployments")
+    assert deployments.status_code == 200
+    assert {item["name"] for item in deployments.json()} == {"catalog-api", "checkout-api"}

@@ -54,7 +54,7 @@ class DeploymentService:
         status = DeploymentStatus.pending if self._settings.execute_kubectl else DeploymentStatus.running
         message = "Deployment accepted and is pending Kubernetes rollout."
         if not self._settings.execute_kubectl:
-            message = "Deployment simulated locally because kubectl execution is disabled."
+            message = "Kubernetes manifest generated; kubectl execution is disabled in this hosted demo."
 
         record = DeploymentRecord(
             name=request.name,
@@ -80,7 +80,7 @@ class DeploymentService:
                 "namespace": record.namespace,
                 "replicas": record.replicas,
                 "port": record.port,
-                "mode": "kubernetes" if self._settings.execute_kubectl else "local-demo",
+                "mode": "kubernetes" if self._settings.execute_kubectl else "manifest-simulation",
             },
         )
 
