@@ -6,9 +6,9 @@ Think of it as a compact internal platform: a team can ship a service, inspect h
 
 ## Live Public Demo
 
-Open **[infrawtach.vercel.app](https://infrawtach.vercel.app)** to use InfraWatch immediately—no account, credentials, backend, or Kubernetes cluster required.
+Open **[infrawatch-platform.vercel.app](https://infrawatch-platform.vercel.app)** to use InfraWatch immediately—no account or credentials required. The shorter `infrawatch.vercel.app` alias is already owned by another Vercel account, so this deployment uses the correctly spelled `infrawatch-platform` project name.
 
-The hosted dashboard runs as a safe per-browser sandbox. You can create, update, inspect, and remove demo deployments, review simulated telemetry and logs, and reset the sample fleet at any time. Changes are stored only in that browser, so one visitor cannot alter another visitor's demo.
+The hosted dashboard is connected to a real FastAPI service at **[infrawatch-api.vercel.app](https://infrawatch-api.vercel.app)**. FastAPI validates deployment requests, generates Kubernetes manifests, records demo state and audit events, and serves metrics/log responses. Because Vercel does not provide a Kubernetes cluster, Prometheus, or Loki, workload execution and observability data remain explicitly simulated in the public demo.
 
 ## What You Can Demo
 
@@ -21,11 +21,11 @@ The hosted dashboard runs as a safe per-browser sandbox. You can create, update,
 
 ## Fast Reviewer Path
 
-1. Open the [public InfraWatch demo](https://infrawtach.vercel.app).
+1. Open the [public InfraWatch demo](https://infrawatch-platform.vercel.app).
 2. Select a service and review metrics, logs, deployment inventory, and audit history.
 3. Deploy a demo service such as `jobs-api`, then update or remove it.
-4. Use **Reset sandbox** to restore the original sample fleet.
-5. For the full observability stack, run `make up` locally and open Grafana at `http://localhost:3001`.
+4. Open the [live FastAPI docs](https://infrawatch-api.vercel.app/docs) and inspect `/healthz` to see the active hosted capabilities.
+5. For real workload execution and the full observability stack, run the Docker/Kubernetes environment and connect FastAPI to kubectl, Prometheus, and Loki.
 
 ## Project Screenshot
 
@@ -165,15 +165,23 @@ Backend docs: http://localhost:8000/docs
 
 The backend uses safe mock deployment/observability data by default, so you can test the dashboard without a Kubernetes cluster.
 
-## Deploy the Public Frontend to Vercel
+## Deploy the Hosted Demo to Vercel
 
-The root `vercel.json` installs and builds the Vite app from `frontend/`, serves its production assets, and preserves client-side routes. Deploy from the repository root:
+The hosted demo uses two Vercel projects:
+
+- `infrawatch-api` runs the FastAPI backend from `backend/`.
+- `infrawatch-platform` builds the React app and proxies `/api/*` to the backend.
+
+Deploy the API first, then the dashboard:
 
 ```bash
-npx vercel --prod
+npx vercel --cwd backend --prod --project infrawatch-api
+npx vercel --prod --project infrawatch-platform
 ```
 
-When `VITE_API_BASE_URL` is not set on a public hostname, InfraWatch automatically uses the isolated browser sandbox. Set that variable to a reachable FastAPI URL only when you intentionally want the hosted UI to use a shared backend. Local Vite development continues to default to `http://localhost:8000`.
+On public hosts the frontend calls `/api`, which Vercel rewrites to the hosted FastAPI project. Local Vite development continues to default to `http://localhost:8000`. Set `VITE_DEMO_MODE=true` only when intentionally running the frontend-only browser sandbox.
+
+The Vercel API uses ephemeral serverless storage, so public demo records can reset during cold starts or new deployments. Production Kubernetes mode needs a durable database, cluster credentials, and reachable Prometheus/Loki services; those are provided by the Docker/Kubernetes configuration in this repository, not by Vercel.
 
 ## Run Full Local Stack With Docker
 

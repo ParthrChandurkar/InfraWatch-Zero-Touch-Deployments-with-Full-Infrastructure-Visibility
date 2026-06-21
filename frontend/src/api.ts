@@ -12,9 +12,11 @@ import {
 
 const configuredApiUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 const isLocalBrowser = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-const API_BASE_URL = configuredApiUrl || (isLocalBrowser ? "http://localhost:8000" : "");
+const demoModeRequested = import.meta.env.VITE_DEMO_MODE === "true";
+const API_BASE_URL = demoModeRequested ? "" : configuredApiUrl || (isLocalBrowser ? "http://localhost:8000" : "/api");
 
 export const isDemoMode = API_BASE_URL === "";
+export const apiMode = isDemoMode ? "browser" : isLocalBrowser ? "local" : "hosted";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {

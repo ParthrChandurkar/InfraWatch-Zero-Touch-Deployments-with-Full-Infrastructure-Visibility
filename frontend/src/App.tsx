@@ -31,6 +31,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  apiMode,
   deleteDeployment,
   deployService,
   getLogs,
@@ -66,8 +67,11 @@ const EMPTY_METRICS: ServiceMetrics = {
 
 const EMPTY_LOGS: LogsResponse = { service: "", lines: [], source: "empty" };
 const REPOSITORY_URL = "https://github.com/ParthrChandurkar/InfraWatch-Zero-Touch-Deployments-with-Full-Infrastructure-Visibility";
+const HOSTED_API_URL = "https://infrawatch-api.vercel.app";
 
 function App() {
+  const isHostedApi = apiMode === "hosted";
+  const isLocalApi = apiMode === "local";
   const [deployments, setDeployments] = useState<DeploymentRecord[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [metrics, setMetrics] = useState<ServiceMetrics>(EMPTY_METRICS);
@@ -263,9 +267,9 @@ function App() {
 
   const pipelineSteps = [
     { icon: <GitBranch size={17} />, label: "GitHub", value: "main synced", state: "ready" },
-    { icon: <Rocket size={17} />, label: "CI/CD", value: "validation gate", state: "ready" },
-    { icon: <Layers size={17} />, label: "Images", value: "DockerHub ready", state: "ready" },
-    { icon: <Server size={17} />, label: "Runtime", value: isDemoMode ? "Vercel public demo" : "Docker Compose", state: "live" },
+    { icon: <Rocket size={17} />, label: "Delivery", value: isHostedApi ? "Vercel production" : "validation gate", state: "ready" },
+    { icon: <Layers size={17} />, label: "Deployments", value: isHostedApi ? "Manifest simulation" : "Docker images", state: "ready" },
+    { icon: <Server size={17} />, label: "Runtime", value: isHostedApi ? "Vercel + FastAPI" : isDemoMode ? "Browser sandbox" : "Docker Compose", state: "live" },
     { icon: <Gauge size={17} />, label: "Telemetry", value: telemetryMode, state: "live" },
   ];
 
@@ -285,7 +289,7 @@ function App() {
         <div className="environment-card">
           <div>
             <span>Environment</span>
-            <strong>{isDemoMode ? "Public browser sandbox" : "Local demo stack"}</strong>
+            <strong>{isHostedApi ? "Hosted FastAPI demo" : isDemoMode ? "Browser sandbox" : "Local full stack"}</strong>
           </div>
           <span className="pulse-dot" />
         </div>
@@ -336,7 +340,7 @@ function App() {
             <p>Release orchestration, fleet health, live telemetry, and incident logs in one control plane.</p>
           </div>
           <div className="header-actions" aria-label="External operations tools">
-            {isDemoMode ? (
+            {!isLocalApi ? (
               <>
                 <a href={REPOSITORY_URL} target="_blank" rel="noreferrer">
                   <GitBranch size={16} />
@@ -348,9 +352,9 @@ function App() {
                   Architecture
                   <ExternalLink size={14} />
                 </a>
-                <a href={`${REPOSITORY_URL}#main-api-endpoints`} target="_blank" rel="noreferrer">
+                <a href={isHostedApi ? `${HOSTED_API_URL}/docs` : `${REPOSITORY_URL}#main-api-endpoints`} target="_blank" rel="noreferrer">
                   <Terminal size={16} />
-                  API Contract
+                  {isHostedApi ? "Live API Docs" : "API Contract"}
                   <ExternalLink size={14} />
                 </a>
               </>
@@ -376,12 +380,16 @@ function App() {
           </div>
         </header>
 
-        {isDemoMode && (
+        {(isDemoMode || isHostedApi) && (
           <div className="mode-banner" role="status">
             <ShieldCheck size={20} />
             <div>
-              <strong>Safe public demo</strong>
-              <span>Deployments and audit events stay in this browser. No account, cluster, or shared credentials are required.</span>
+              <strong>{isHostedApi ? "Hosted control-plane demo" : "Safe browser demo"}</strong>
+              <span>
+                {isHostedApi
+                  ? "The React dashboard is connected to a live FastAPI service. Kubernetes applies and Prometheus/Loki signals are simulated because no cluster is attached."
+                  : "Deployments and audit events stay in this browser. No account, cluster, or shared credentials are required."}
+              </span>
             </div>
           </div>
         )}
@@ -435,7 +443,13 @@ function App() {
             </div>
 
             <form className="deploy-form" onSubmit={handleDeploy}>
-              {isDemoMode && <p className="sandbox-note">Try any valid service name and container image. Changes are private to this device.</p>}
+              {(isDemoMode || isHostedApi) && (
+                <p className="sandbox-note">
+                  {isHostedApi
+                    ? "FastAPI validates this request and generates a Kubernetes manifest. No real workload is started without a connected cluster."
+                    : "Try any valid service name and container image. Changes are private to this device."}
+                </p>
+              )}
               <label>
                 Service name
                 <input
@@ -608,7 +622,7 @@ function App() {
                 <h2>Readiness</h2>
               </div>
             </div>
-            <Signal label="Control plane" value={isDemoMode ? "Browser sandbox ready" : "FastAPI online"} state="ok" />
+            <Signal label="Control plane" value={isHostedApi ? "Hosted FastAPI online" : isDemoMode ? "Browser sandbox ready" : "FastAPI online"} state="ok" />
             <Signal label="Metrics path" value={telemetryMode} state="ok" />
             <Signal label="Average CPU" value={`${telemetry.avgCpu.toFixed(2)} cores`} state="ok" />
             <Signal label="Peak memory" value={`${Math.round(telemetry.peakMemory)} MB`} state="ok" />
