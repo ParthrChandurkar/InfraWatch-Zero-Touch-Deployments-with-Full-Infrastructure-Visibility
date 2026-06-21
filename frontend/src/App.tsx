@@ -12,6 +12,7 @@ import {
   HardDrive,
   Layers,
   RefreshCw,
+  RotateCcw,
   Rocket,
   Server,
   ShieldCheck,
@@ -34,8 +35,10 @@ import {
   deployService,
   getLogs,
   getMetrics,
+  isDemoMode,
   listAuditLogs,
   listDeployments,
+  resetSandbox,
 } from "./api";
 import type {
   AuditLogEntry,
@@ -62,6 +65,7 @@ const EMPTY_METRICS: ServiceMetrics = {
 };
 
 const EMPTY_LOGS: LogsResponse = { service: "", lines: [], source: "empty" };
+const REPOSITORY_URL = "https://github.com/ParthrChandurkar/InfraWatch-Zero-Touch-Deployments-with-Full-Infrastructure-Visibility";
 
 function App() {
   const [deployments, setDeployments] = useState<DeploymentRecord[]>([]);
@@ -188,6 +192,9 @@ function App() {
   }
 
   async function handleDelete(name: string) {
+    if (!window.confirm(`Remove ${name} from ${isDemoMode ? "your browser sandbox" : "InfraWatch"}?`)) {
+      return;
+    }
     setError("");
     try {
       await deleteDeployment(name);
@@ -196,6 +203,17 @@ function App() {
       setSelected("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Delete failed");
+    }
+  }
+
+  async function handleResetSandbox() {
+    resetSandbox();
+    setError("");
+    setIsLoading(true);
+    try {
+      await Promise.all([refreshDeployments(), refreshAuditLogs()]);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -247,7 +265,7 @@ function App() {
     { icon: <GitBranch size={17} />, label: "GitHub", value: "main synced", state: "ready" },
     { icon: <Rocket size={17} />, label: "CI/CD", value: "validation gate", state: "ready" },
     { icon: <Layers size={17} />, label: "Images", value: "DockerHub ready", state: "ready" },
-    { icon: <Server size={17} />, label: "Runtime", value: "Docker Compose", state: "live" },
+    { icon: <Server size={17} />, label: "Runtime", value: isDemoMode ? "Vercel public demo" : "Docker Compose", state: "live" },
     { icon: <Gauge size={17} />, label: "Telemetry", value: telemetryMode, state: "live" },
   ];
 
@@ -267,7 +285,7 @@ function App() {
         <div className="environment-card">
           <div>
             <span>Environment</span>
-            <strong>Local demo stack</strong>
+            <strong>{isDemoMode ? "Public browser sandbox" : "Local demo stack"}</strong>
           </div>
           <span className="pulse-dot" />
         </div>
@@ -276,6 +294,13 @@ function App() {
           <RefreshCw size={16} />
           Refresh
         </button>
+
+        {isDemoMode && (
+          <button className="reset-button" type="button" onClick={handleResetSandbox} title="Restore sample services">
+            <RotateCcw size={16} />
+            Reset sandbox
+          </button>
+        )}
 
         <nav className="service-list" aria-label="Deployed services">
           <div className="sidebar-label">Service Fleet</div>
@@ -311,23 +336,55 @@ function App() {
             <p>Release orchestration, fleet health, live telemetry, and incident logs in one control plane.</p>
           </div>
           <div className="header-actions" aria-label="External operations tools">
-            <a href="http://localhost:3001" target="_blank" rel="noreferrer">
-              <BarChart3 size={16} />
-              Grafana
-              <ExternalLink size={14} />
-            </a>
-            <a href="http://localhost:9090" target="_blank" rel="noreferrer">
-              <Activity size={16} />
-              Prometheus
-              <ExternalLink size={14} />
-            </a>
-            <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">
-              <Terminal size={16} />
-              API Docs
-              <ExternalLink size={14} />
-            </a>
+            {isDemoMode ? (
+              <>
+                <a href={REPOSITORY_URL} target="_blank" rel="noreferrer">
+                  <GitBranch size={16} />
+                  GitHub
+                  <ExternalLink size={14} />
+                </a>
+                <a href={`${REPOSITORY_URL}/blob/main/flow.md`} target="_blank" rel="noreferrer">
+                  <GitBranch size={16} />
+                  Architecture
+                  <ExternalLink size={14} />
+                </a>
+                <a href={`${REPOSITORY_URL}#main-api-endpoints`} target="_blank" rel="noreferrer">
+                  <Terminal size={16} />
+                  API Contract
+                  <ExternalLink size={14} />
+                </a>
+              </>
+            ) : (
+              <>
+                <a href="http://localhost:3001" target="_blank" rel="noreferrer">
+                  <BarChart3 size={16} />
+                  Grafana
+                  <ExternalLink size={14} />
+                </a>
+                <a href="http://localhost:9090" target="_blank" rel="noreferrer">
+                  <Activity size={16} />
+                  Prometheus
+                  <ExternalLink size={14} />
+                </a>
+                <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">
+                  <Terminal size={16} />
+                  API Docs
+                  <ExternalLink size={14} />
+                </a>
+              </>
+            )}
           </div>
         </header>
+
+        {isDemoMode && (
+          <div className="mode-banner" role="status">
+            <ShieldCheck size={20} />
+            <div>
+              <strong>Safe public demo</strong>
+              <span>Deployments and audit events stay in this browser. No account, cluster, or shared credentials are required.</span>
+            </div>
+          </div>
+        )}
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -378,10 +435,15 @@ function App() {
             </div>
 
             <form className="deploy-form" onSubmit={handleDeploy}>
+              {isDemoMode && <p className="sandbox-note">Try any valid service name and container image. Changes are private to this device.</p>}
               <label>
                 Service name
                 <input
                   aria-label="Service name"
+                  required
+                  minLength={2}
+                  maxLength={63}
+                  pattern="[a-z0-9]([-a-z0-9]*[a-z0-9])?"
                   value={form.name}
                   onChange={(event) => setForm({ ...form, name: event.target.value })}
                   placeholder="service-name"
@@ -391,6 +453,9 @@ function App() {
                 Container image
                 <input
                   aria-label="Container image"
+                  required
+                  minLength={3}
+                  maxLength={255}
                   value={form.image}
                   onChange={(event) => setForm({ ...form, image: event.target.value })}
                   placeholder="registry/image:tag"
@@ -543,7 +608,7 @@ function App() {
                 <h2>Readiness</h2>
               </div>
             </div>
-            <Signal label="Control plane" value="FastAPI online" state="ok" />
+            <Signal label="Control plane" value={isDemoMode ? "Browser sandbox ready" : "FastAPI online"} state="ok" />
             <Signal label="Metrics path" value={telemetryMode} state="ok" />
             <Signal label="Average CPU" value={`${telemetry.avgCpu.toFixed(2)} cores`} state="ok" />
             <Signal label="Peak memory" value={`${Math.round(telemetry.peakMemory)} MB`} state="ok" />

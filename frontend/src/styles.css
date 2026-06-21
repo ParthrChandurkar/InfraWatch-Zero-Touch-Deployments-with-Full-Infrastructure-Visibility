@@ -142,6 +142,7 @@ a {
 }
 
 .refresh-button,
+.reset-button,
 .deploy-form button,
 .header-actions a,
 .table-action {
@@ -159,6 +160,19 @@ a {
   width: 100%;
   background: #f1c75b;
   color: #171308;
+}
+
+.reset-button {
+  width: 100%;
+  margin-top: -6px;
+  border: 1px solid #334050;
+  background: #151b22;
+  color: #dce5ef;
+}
+
+.reset-button:hover {
+  border-color: #79bdff;
+  background: #1b2634;
 }
 
 .service-list {
@@ -283,6 +297,32 @@ a {
   background: #2a1218;
   color: #ffb8c1;
   padding: 12px 14px;
+}
+
+.mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #315e50;
+  border-radius: 8px;
+  background: #10221c;
+  color: #3ddc97;
+  padding: 13px 15px;
+}
+
+.mode-banner div {
+  min-width: 0;
+}
+
+.mode-banner strong,
+.mode-banner span {
+  display: block;
+}
+
+.mode-banner span {
+  margin-top: 3px;
+  color: #b9d6cb;
+  line-height: 1.45;
 }
 
 .pipeline-strip {
@@ -522,6 +562,16 @@ a {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.sandbox-note {
+  margin: 0;
+  border-left: 3px solid #4da3ff;
+  background: #111d2b;
+  color: #b9c8d8;
+  padding: 9px 11px;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .deploy-form label {
