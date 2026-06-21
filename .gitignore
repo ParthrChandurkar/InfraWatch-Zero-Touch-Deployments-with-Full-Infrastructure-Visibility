@@ -40,3 +40,5 @@ Thumbs.db
 
 # Codex/local verification artifacts.
 .codex-logs/
+
+.vercel

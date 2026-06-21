@@ -4,6 +4,12 @@ InfraWatch is a cloud-native DevOps control plane for deploying containerized se
 
 Think of it as a compact internal platform: a team can ship a service, inspect health, read logs, and prove what changed without jumping between five tools.
 
+## Live Public Demo
+
+Open **[infrawtach.vercel.app](https://infrawtach.vercel.app)** to use InfraWatch immediately—no account, credentials, backend, or Kubernetes cluster required.
+
+The hosted dashboard runs as a safe per-browser sandbox. You can create, update, inspect, and remove demo deployments, review simulated telemetry and logs, and reset the sample fleet at any time. Changes are stored only in that browser, so one visitor cannot alter another visitor's demo.
+
 ## What You Can Demo
 
 - Trigger service deployments from the dashboard or the FastAPI API.
@@ -15,11 +21,11 @@ Think of it as a compact internal platform: a team can ship a service, inspect h
 
 ## Fast Reviewer Path
 
-1. Run the full stack with `make up` or `docker compose up --build`.
-2. Open `http://localhost:3000` for the InfraWatch dashboard.
-3. Deploy a demo service such as `jobs-api`.
-4. Open the selected service and review metrics, logs, deployment inventory, and audit trail.
-5. Open Grafana at `http://localhost:3001` for deeper monitoring.
+1. Open the [public InfraWatch demo](https://infrawtach.vercel.app).
+2. Select a service and review metrics, logs, deployment inventory, and audit history.
+3. Deploy a demo service such as `jobs-api`, then update or remove it.
+4. Use **Reset sandbox** to restore the original sample fleet.
+5. For the full observability stack, run `make up` locally and open Grafana at `http://localhost:3001`.
 
 ## Project Screenshot
 
@@ -158,6 +164,16 @@ Backend docs: http://localhost:8000/docs
 ```
 
 The backend uses safe mock deployment/observability data by default, so you can test the dashboard without a Kubernetes cluster.
+
+## Deploy the Public Frontend to Vercel
+
+The root `vercel.json` installs and builds the Vite app from `frontend/`, serves its production assets, and preserves client-side routes. Deploy from the repository root:
+
+```bash
+npx vercel --prod
+```
+
+When `VITE_API_BASE_URL` is not set on a public hostname, InfraWatch automatically uses the isolated browser sandbox. Set that variable to a reachable FastAPI URL only when you intentionally want the hosted UI to use a shared backend. Local Vite development continues to default to `http://localhost:8000`.
 
 ## Run Full Local Stack With Docker
 
