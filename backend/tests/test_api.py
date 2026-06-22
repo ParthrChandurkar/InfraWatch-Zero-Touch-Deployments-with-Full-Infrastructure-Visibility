@@ -47,10 +47,14 @@ def test_deployment_lifecycle(tmp_path) -> None:
     metrics = client.get("/metrics/catalog-api")
     assert metrics.status_code == 200
     assert metrics.json()["source"] == "mock"
+    assert len(metrics.json()["cpu_cores"]) == 15
+    assert all(point["value"] >= 0 for point in metrics.json()["error_rate"])
 
     logs = client.get("/logs/catalog-api")
     assert logs.status_code == 200
     assert logs.json()["lines"]
+    assert len({entry["line"] for entry in logs.json()["lines"]}) >= 5
+    assert any("[warn]" in entry["line"] for entry in logs.json()["lines"])
 
     deleted = client.delete("/deployment/catalog-api")
     assert deleted.status_code == 200
@@ -91,4 +95,8 @@ def test_hosted_demo_can_seed_sample_services(tmp_path) -> None:
 
     deployments = client.get("/deployments")
     assert deployments.status_code == 200
-    assert {item["name"] for item in deployments.json()} == {"catalog-api", "checkout-api"}
+    assert {item["name"] for item in deployments.json()} == {
+        "catalog-api",
+        "checkout-api",
+        "payments-worker",
+    }

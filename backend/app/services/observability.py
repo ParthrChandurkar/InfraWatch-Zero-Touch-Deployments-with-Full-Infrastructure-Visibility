@@ -76,24 +76,41 @@ class PrometheusClient:
         ]
 
     def _mock_metrics(self, service: str) -> ServiceMetrics:
-        """Produce realistic-looking data for demos and tests."""
+        """Produce stable, service-specific time series for demos and tests."""
 
         now = int(time.time())
-        seed = sum(ord(char) for char in service) % 10
+        seed = sum((index + 1) * ord(char) for index, char in enumerate(service))
         timestamps = [now - (14 - index) * 60 for index in range(15)]
 
-        def series(base: float, amplitude: float) -> list[MetricPoint]:
+        def series(base: float, amplitude: float, *, trend: float = 0, floor: float = 0) -> list[MetricPoint]:
             return [
-                MetricPoint(timestamp=stamp, value=round(base + math.sin(index / 2 + seed) * amplitude, 3))
+                MetricPoint(
+                    timestamp=stamp,
+                    value=round(
+                        max(
+                            floor,
+                            base
+                            + math.sin((index + seed % 7) / 2.2) * amplitude
+                            + math.cos((index + seed % 11) / 4.1) * amplitude * 0.35
+                            + trend * index,
+                        ),
+                        3,
+                    ),
+                )
                 for index, stamp in enumerate(timestamps)
             ]
 
+        cpu_base = 0.16 + (seed % 13) / 100
+        memory_base = 210 + seed % 90
+        request_base = 22 + seed % 28
+        error_base = 0.015 + (seed % 5) / 100
+
         return ServiceMetrics(
             service=service,
-            cpu_cores=series(0.22 + seed / 100, 0.08),
-            memory_megabytes=series(220 + seed * 6, 28),
-            request_rate=series(18 + seed, 5),
-            error_rate=series(0.08, 0.04),
+            cpu_cores=series(cpu_base, 0.065, trend=0.001),
+            memory_megabytes=series(memory_base, 24, trend=0.7),
+            request_rate=series(request_base, 7.5, trend=0.12),
+            error_rate=series(error_base, 0.018),
             source="mock",
         )
 
@@ -135,13 +152,33 @@ class LokiClient:
         return parsed
 
     def _mock_logs(self, service: str, limit: int) -> LogsResponse:
-        """Return demo logs when Loki is not reachable."""
+        """Return varied operational logs when Loki is not reachable."""
 
         now = int(time.time())
+        seed = sum(ord(char) for char in service)
+        routes = ("/healthz", "/api/orders", "/api/catalog", "/metrics")
+        messages = (
+            lambda index: (
+                f"[info] service={service} request completed method=GET path={routes[(index + seed) % len(routes)]} "
+                f"status=200 duration_ms={18 + (seed + index * 7) % 83}"
+            ),
+            lambda index: (
+                f"[info] service={service} cache refresh completed entries={140 + (seed + index * 13) % 760}"
+            ),
+            lambda index: (
+                f"[info] service={service} deployment revision={1 + seed % 8} ready_replicas={1 + seed % 3}"
+            ),
+            lambda index: (
+                f"[warn] service={service} upstream latency elevated duration_ms={190 + (seed + index) % 90} retry=1"
+            ),
+            lambda index: (
+                f"[info] service={service} trace_id={seed:04x}{index:04x} span=database.query status=ok"
+            ),
+        )
         entries = [
             LogLine(
-                timestamp=datetime.fromtimestamp(now - index * 5, UTC).isoformat(),
-                line=f"{service}: request completed path=/healthz status=200 duration_ms={24 + index % 9}",
+                timestamp=datetime.fromtimestamp(now - index * 17, UTC).isoformat(),
+                line=messages[(index + seed) % len(messages)](index),
             )
             for index in range(min(limit, 20))
         ]

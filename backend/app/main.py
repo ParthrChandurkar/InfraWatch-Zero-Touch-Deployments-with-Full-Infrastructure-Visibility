@@ -80,6 +80,13 @@ def _seed_demo_deployments(service: DeploymentService) -> None:
             port=8080,
             environment={"ENVIRONMENT": "demo"},
         ),
+        DeploymentRequest(
+            name="payments-worker",
+            image="ghcr.io/infrawatch/payments-worker:3.2.0",
+            replicas=2,
+            port=9090,
+            environment={"ENVIRONMENT": "demo", "QUEUE": "payments"},
+        ),
     ):
         service.deploy(payload)
 
