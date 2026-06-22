@@ -380,19 +380,7 @@ function App() {
           </div>
         </header>
 
-        {(isDemoMode || isHostedApi) && (
-          <div className="mode-banner" role="status">
-            <ShieldCheck size={20} />
-            <div>
-              <strong>{isHostedApi ? "Hosted control-plane demo" : "Safe browser demo"}</strong>
-              <span>
-                {isHostedApi
-                  ? "The React dashboard is connected to a live FastAPI service. Kubernetes applies and Prometheus/Loki signals are simulated because no cluster is attached."
-                  : "Deployments and audit events stay in this browser. No account, cluster, or shared credentials are required."}
-              </span>
-            </div>
-          </div>
-        )}
+        {(isDemoMode || isHostedApi) && <DemoModeBanner hosted={isHostedApi} />}
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -643,6 +631,30 @@ function SummaryCard({ icon, label, value, tone }: { icon: ReactNode; label: str
         <span>{label}</span>
       </div>
     </article>
+  );
+}
+
+function DemoModeBanner({ hosted }: { hosted: boolean }) {
+  return (
+    <section className="demo-mode-banner" role="note" aria-label="Demo Mode">
+      <div className="demo-mode-title">
+        <AlertTriangle size={22} aria-hidden="true" />
+        <div>
+          <strong>DEMO MODE</strong>
+          <span>Portfolio environment</span>
+        </div>
+      </div>
+      <p>
+        {hosted
+          ? "The FastAPI control plane is live. Kubernetes deployments, Prometheus metrics, and Loki logs use realistic simulation because no cluster is attached."
+          : "This frontend-only sandbox keeps all changes in your browser and uses realistic simulated infrastructure data."}
+      </p>
+      <div className="demo-capabilities" aria-label="Demo capabilities">
+        <span className="real">{hosted ? "Live FastAPI" : "Interactive UI"}</span>
+        <span>Simulated Kubernetes</span>
+        <span>Mock metrics & logs</span>
+      </div>
+    </section>
   );
 }
 
