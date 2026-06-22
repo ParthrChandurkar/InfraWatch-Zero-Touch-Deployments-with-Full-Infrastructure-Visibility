@@ -18,6 +18,33 @@ const API_BASE_URL = demoModeRequested ? "" : configuredApiUrl || (isLocalBrowse
 export const isDemoMode = API_BASE_URL === "";
 export const apiMode = isDemoMode ? "browser" : isLocalBrowser ? "local" : "hosted";
 
+type FallbackListener = (active: boolean) => void;
+
+let fallbackActive = isDemoMode;
+const fallbackListeners = new Set<FallbackListener>();
+
+class ApiResponseError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+function setFallbackActive(active: boolean) {
+  if (fallbackActive === active) {
+    return;
+  }
+  fallbackActive = active;
+  fallbackListeners.forEach((listener) => listener(active));
+}
+
+export function subscribeToApiFallback(listener: FallbackListener) {
+  fallbackListeners.add(listener);
+  listener(fallbackActive);
+  return () => {
+    fallbackListeners.delete(listener);
+  };
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
@@ -29,61 +56,78 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: response.statusText }));
-    throw new Error(body.detail ?? response.statusText);
+    throw new ApiResponseError(body.detail ?? response.statusText, response.status);
   }
 
   return response.json() as Promise<T>;
 }
 
-export function listDeployments(): Promise<DeploymentRecord[]> {
+async function withDemoFallback<T>(apiCall: () => Promise<T>, demoCall: () => T): Promise<T> {
   if (isDemoMode) {
-    return Promise.resolve(listDemoDeployments());
+    return demoCall();
   }
-  return request<DeploymentRecord[]>("/deployments");
+
+  try {
+    const result = await apiCall();
+    if (apiMode === "hosted") {
+      setFallbackActive(false);
+    }
+    return result;
+  } catch (error) {
+    const canFallback = apiMode === "hosted" && (!(error instanceof ApiResponseError) || error.status >= 500);
+    if (!canFallback) {
+      throw error;
+    }
+    setFallbackActive(true);
+    return demoCall();
+  }
+}
+
+export function listDeployments(): Promise<DeploymentRecord[]> {
+  return withDemoFallback(
+    () => request<DeploymentRecord[]>("/deployments"),
+    () => listDemoDeployments(),
+  );
 }
 
 export function deployService(payload: DeployPayload): Promise<{ deployment: DeploymentRecord }> {
-  if (isDemoMode) {
-    return Promise.resolve(deployDemoService(payload));
-  }
-  return request<{ deployment: DeploymentRecord }>("/deploy", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return withDemoFallback(
+    () => request<{ deployment: DeploymentRecord }>("/deploy", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+    () => deployDemoService(payload),
+  );
 }
 
 export function deleteDeployment(name: string): Promise<{ status: string; name: string }> {
-  if (isDemoMode) {
-    return Promise.resolve(deleteDemoDeployment(name));
-  }
-  return request<{ status: string; name: string }>(`/deployment/${name}`, {
-    method: "DELETE",
-  });
+  return withDemoFallback(
+    () => request<{ status: string; name: string }>(`/deployment/${name}`, { method: "DELETE" }),
+    () => deleteDemoDeployment(name),
+  );
 }
 
 export function getMetrics(service: string): Promise<ServiceMetrics> {
-  if (isDemoMode) {
-    return Promise.resolve(getDemoMetrics(service));
-  }
-  return request<ServiceMetrics>(`/metrics/${service}`);
+  return withDemoFallback(
+    () => request<ServiceMetrics>(`/metrics/${service}`),
+    () => getDemoMetrics(service),
+  );
 }
 
 export function getLogs(service: string): Promise<LogsResponse> {
-  if (isDemoMode) {
-    return Promise.resolve(getDemoLogs(service));
-  }
-  return request<LogsResponse>(`/logs/${service}`);
+  return withDemoFallback(
+    () => request<LogsResponse>(`/logs/${service}`),
+    () => getDemoLogs(service),
+  );
 }
 
 export function listAuditLogs(limit = 50): Promise<AuditLogEntry[]> {
-  if (isDemoMode) {
-    return Promise.resolve(listDemoAuditLogs(limit));
-  }
-  return request<AuditLogEntry[]>(`/audit-logs?limit=${limit}`);
+  return withDemoFallback(
+    () => request<AuditLogEntry[]>(`/audit-logs?limit=${limit}`),
+    () => listDemoAuditLogs(limit),
+  );
 }
 
 export function resetSandbox() {
-  if (isDemoMode) {
-    resetDemoState();
-  }
+  resetDemoState();
 }
