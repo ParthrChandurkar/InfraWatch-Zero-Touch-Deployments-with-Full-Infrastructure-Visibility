@@ -10,6 +10,24 @@ Open **[infrawatch-platform.vercel.app](https://infrawatch-platform.vercel.app)*
 
 The hosted dashboard is connected to a real FastAPI service at **[infrawatch-api.vercel.app](https://infrawatch-api.vercel.app)**. FastAPI validates deployment requests, generates Kubernetes manifests, records demo state and audit events, and serves metrics/log responses. Because Vercel does not provide a Kubernetes cluster, Prometheus, or Loki, workload execution and observability data remain explicitly simulated in the public demo.
 
+> [!IMPORTANT]
+> The public site runs in **Demo Mode**. It is an interactive portfolio deployment, not a claim that a Kubernetes cluster is running inside Vercel. The dashboard labels simulated infrastructure data clearly and falls back to browser mocks if the hosted API is unavailable.
+
+## Deployment Modes
+
+| Capability | Public Demo Mode | Full Platform Deployment |
+|---|---|---|
+| React dashboard | Live on Vercel | Live behind the cluster ingress/frontend service |
+| FastAPI control plane | Live on Vercel Functions | Live as a Kubernetes deployment |
+| Deploy action | Validates input and generates a Kubernetes manifest | Applies workloads through `kubectl` |
+| Service inventory | Seeded demo records in ephemeral serverless storage | Requires a durable repository adapter for multi-instance production |
+| Metrics | Realistic mock CPU, memory, traffic, and error-rate series | Prometheus queries against running workloads |
+| Logs | Realistic mock application and operational events | Loki streams collected by Promtail |
+| Grafana | Not hosted in the public demo | Provisioned with the included dashboards |
+| Infrastructure required | None for reviewers | Kubernetes, registry access, Prometheus, Loki, Grafana, and persistent storage |
+
+The public demo makes the product workflow reviewable. The repository contains the manifests and configuration for the full deployment; those components become real only when connected to an actual Kubernetes environment.
+
 ## What You Can Demo
 
 - Trigger service deployments from the dashboard or the FastAPI API.
@@ -34,6 +52,8 @@ The hosted dashboard is connected to a real FastAPI service at **[infrawatch-api
 ## Architecture Diagram
 
 **Diagram name:** InfraWatch End-to-End Architecture
+
+This diagram describes the **full platform deployment**. In the public Vercel demo, the Kubernetes, Prometheus, Loki, and Grafana nodes are replaced by realistic mock responses.
 
 ```mermaid
 flowchart LR
@@ -108,6 +128,20 @@ Install these tools:
 - Helm 3+
 
 For only checking the backend/frontend locally, Python and Node are enough. For the full platform, Docker and Kubernetes tools are needed.
+
+### Full Deployment Requirements
+
+A non-demo deployment requires:
+
+- A reachable Kubernetes cluster and a valid kubeconfig.
+- A container registry containing the backend, frontend, and managed service images.
+- `INFRAWATCH_EXECUTE_KUBECTL=true` on the FastAPI control plane.
+- Prometheus and Loki endpoints reachable from FastAPI.
+- Grafana connected to those observability data sources.
+- A durable state adapter (PostgreSQL is the intended target; the current API repository is file-backed).
+- Correctly managed Kubernetes and GitHub secrets.
+
+Without these dependencies InfraWatch intentionally stays in Demo Mode; it does not pretend to create workloads or collect live cluster telemetry.
 
 ## Install Dependencies
 
