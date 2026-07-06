@@ -303,6 +303,16 @@ Demo checklist:
 - Confirm the audit trail records the deploy action.
 - Open Grafana to show the monitoring layer behind the product UI.
 
+## Troubleshooting
+
+| Symptom | What to check |
+|---|---|
+| Dashboard loads but API calls fail | Confirm the backend is running and `VITE_API_BASE_URL` points to the right FastAPI URL. |
+| Docker Compose refuses to start PostgreSQL or Grafana | Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` and `GRAFANA_ADMIN_PASSWORD`. |
+| Deployments stay simulated | This is expected unless `INFRAWATCH_EXECUTE_KUBECTL=true` is set in an environment with a valid kubeconfig. |
+| Metrics or logs look mocked | Prometheus and Loki data is simulated until the backend can reach real `INFRAWATCH_PROMETHEUS_URL` and `INFRAWATCH_LOKI_URL` services. |
+| Hosted demo state resets | Vercel serverless storage is ephemeral; use the Docker or Kubernetes path for durable local state. |
+
 ## Main API Endpoints
 
 | Method | Endpoint | Purpose |
