@@ -196,6 +196,24 @@ npm ci
 
 Frontend packages are managed by `frontend/package.json` and `frontend/package-lock.json`.
 
+## Validate Changes
+
+Run these checks before opening a pull request or deploying a full environment:
+
+```bash
+cd backend
+ruff check app tests
+python -m pytest
+```
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+From the project root, `make test` runs the backend test suite and frontend production build. The GitHub Actions workflow also runs backend linting, backend tests, frontend linting, frontend build, and Docker image builds.
+
 ## Run Locally Without Docker
 
 Start backend:
