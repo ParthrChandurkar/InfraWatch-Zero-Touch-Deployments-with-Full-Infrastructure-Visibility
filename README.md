@@ -6,7 +6,7 @@ Think of it as a compact internal platform: a team can ship a service, inspect h
 
 ## Live Public Demo
 
-Open **[infrawatch-platform.vercel.app](https://infrawatch-platform.vercel.app)** to use InfraWatch immediately—no account or credentials required. The shorter `infrawatch.vercel.app` alias is already owned by another Vercel account, so this deployment uses the correctly spelled `infrawatch-platform` project name.
+Open **[infrawatch-platform.vercel.app](https://infrawatch-platform.vercel.app)** to use InfraWatch immediately - no account or credentials required. The shorter `infrawatch.vercel.app` alias is already owned by another Vercel account, so this deployment uses the correctly spelled `infrawatch-platform` project name.
 
 The hosted dashboard is connected to a real FastAPI service at **[infrawatch-api.vercel.app](https://infrawatch-api.vercel.app)**. FastAPI validates deployment requests, generates Kubernetes manifests, records demo state and audit events, and serves metrics/log responses. Because Vercel does not provide a Kubernetes cluster, Prometheus, or Loki, workload execution and observability data remain explicitly simulated in the public demo.
 
@@ -26,7 +26,7 @@ The hosted dashboard is connected to a real FastAPI service at **[infrawatch-api
 | Grafana | Not hosted in the public demo | Provisioned with the included dashboards |
 | Infrastructure required | None for reviewers | Kubernetes, registry access, Prometheus, Loki, Grafana, and persistent storage |
 
-The public demo makes the product workflow reviewable. The repository contains the manifests and configuration for the full deployment; those components become real only when connected to an actual Kubernetes environment.
+The public demo makes the product workflow reviewable without asking visitors to install local infrastructure. The repository contains the manifests and configuration for the full deployment; those components become real only when connected to an actual Kubernetes environment.
 
 ## What You Can Demo
 
