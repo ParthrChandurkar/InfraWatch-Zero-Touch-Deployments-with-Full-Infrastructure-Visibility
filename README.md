@@ -152,6 +152,26 @@ A non-demo deployment requires:
 
 Without these dependencies InfraWatch intentionally stays in Demo Mode; it does not pretend to create workloads or collect live cluster telemetry.
 
+## Configuration Reference
+
+InfraWatch keeps local configuration in example files so secrets stay out of source control:
+
+| File | Used by | Notes |
+|---|---|---|
+| `.env.example` | Docker Compose and root scripts | Copy to `.env` before running the full local stack. |
+| `backend/.env.example` | FastAPI local development | Controls kubectl execution, namespace, Prometheus, Loki, and state-file paths. |
+| `frontend/.env.example` | Vite local development | Points the dashboard at the API and can force browser-only demo mode. |
+
+Important runtime flags:
+
+| Variable | Purpose |
+|---|---|
+| `INFRAWATCH_EXECUTE_KUBECTL` | Keeps deployments simulated when `false`; allows real `kubectl` apply/delete flows when `true`. |
+| `INFRAWATCH_PROMETHEUS_URL` | Backend URL for metrics queries in full observability mode. |
+| `INFRAWATCH_LOKI_URL` | Backend URL for log queries in full observability mode. |
+| `VITE_API_BASE_URL` | Frontend API base URL for local or hosted builds. |
+| `VITE_DEMO_MODE` | Forces the frontend-only mock experience when set to `true`. |
+
 ## Install Dependencies
 
 ### Backend Python Dependencies
