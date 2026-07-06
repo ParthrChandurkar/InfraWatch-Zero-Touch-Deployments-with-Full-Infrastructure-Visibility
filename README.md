@@ -37,6 +37,15 @@ The public demo makes the product workflow reviewable without asking visitors to
 - Run the full stack locally with Docker Compose.
 - Move toward Kubernetes delivery with CI/CD, DockerHub, Terraform, Helm, Prometheus, Grafana, Loki, and Promtail.
 
+## Repository Highlights
+
+- A FastAPI backend that exposes deployment, inventory, audit, metrics, logs, health, and Prometheus-compatible scrape endpoints.
+- A React/Vite dashboard built for deploy, observe, inspect, and delete workflows.
+- Docker Compose wiring for local backend, frontend, PostgreSQL, Prometheus, Grafana, Loki, and Promtail services.
+- Kubernetes manifests for the InfraWatch namespace, backend, frontend, database, and supporting configuration.
+- Terraform and Helm setup for the monitoring and logging stack.
+- GitHub Actions automation for linting, testing, building images, publishing to DockerHub, and applying Kubernetes manifests.
+
 ## Fast Reviewer Path
 
 1. Open the [public InfraWatch demo](https://infrawatch-platform.vercel.app).
