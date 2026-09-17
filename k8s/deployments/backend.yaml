@@ -21,10 +21,19 @@ spec:
         prometheus.io/port: "8000"
     spec:
       serviceAccountName: infrawatch-backend
+      securityContext:
+        fsGroup: 10001
       containers:
         - name: backend
           image: docker.io/parthrchandurkar/infrawatch-backend:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           ports:
             - name: http
               containerPort: 8000

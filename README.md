@@ -447,8 +447,29 @@ KUBE_CONFIG_B64
 | File | Purpose |
 |---|---|
 | `flow.md` | Reviewer-friendly project flow, demo script, API tour, and troubleshooting. |
+| `docs/ARCHITECTURE.md` | Ground-truth architecture and deployment/metrics/logs/alerts/autoscaling data flows. |
+| `docs/TROUBLESHOOTING.md` | SRE-style failure diagnosis commands and recovery steps. |
+| `docs/INTERVIEW_DEMO.md` | 10-15 minute Red Hat SRE interview demo script. |
+| `docs/CV_CLAIM_AUDIT.md` | Honest audit of production-grade, zero-touch, visibility, log-streaming, and 60% claims. |
+| `docs/INTERVIEW_KNOWLEDGE_MAP.md` | What to learn to defend each technology in the project. |
+| `docs/INTERVIEW_QUESTIONS.md` | Project-specific interview question bank. |
+| `docs/REDHAT_INTERVIEW_BRIEF.md` | Concise study brief for the Red Hat SRE interview. |
 | `docs/screenshots/infrawatch-command-center.png` | Main dashboard screenshot used by the README. |
 | `.github/workflows/ci-cd.yml` | CI/CD pipeline for lint, tests, build, image publishing, and deployment. |
+
+### Real Local Kubernetes Mode
+
+Real mode is intentionally separate from the public Vercel demo. In Minikube, FastAPI can execute `kubectl`, wait for rollout status, verify ready/available replicas, store deployment/audit state in PostgreSQL, and read real Prometheus/Loki data. The frontend reaches the backend through the Nginx `/api` proxy inside the frontend container, so no Ingress is required for the basic local demo.
+
+Start with:
+
+```bash
+docs/ARCHITECTURE.md
+docs/INTERVIEW_DEMO.md
+docs/TROUBLESHOOTING.md
+```
+
+GitHub Actions uses immutable `${GITHUB_SHA}` Docker image tags. It can deploy to Kubernetes only when `KUBE_CONFIG_B64` points to a reachable cluster; a laptop-only Minikube cluster is not reachable from hosted GitHub runners unless you explicitly expose/configure it.
 
 ## Roadmap
 

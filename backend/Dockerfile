@@ -17,6 +17,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+RUN addgroup --system infrawatch \
+    && adduser --system --ingroup infrawatch infrawatch \
+    && mkdir -p /tmp/infrawatch /data \
+    && chown -R infrawatch:infrawatch /app /tmp/infrawatch /data
 
 EXPOSE 8000
+USER infrawatch
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
