@@ -48,6 +48,38 @@ prometheus:
               - __meta_kubernetes_pod_container_port_name
             regex: http
             action: keep
+      - job_name: infrawatch-annotated-pods
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - infrawatch
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+            action: keep
+            regex: "true"
+          - source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_path
+            action: replace
+            target_label: __metrics_path__
+            regex: "(.+)"
+          - source_labels:
+              - __address__
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+            action: replace
+            regex: "([^:]+)(?::\\d+)?;(\\d+)"
+            replacement: "$1:$2"
+            target_label: __address__
+          - source_labels:
+              - __meta_kubernetes_namespace
+            target_label: namespace
+          - source_labels:
+              - __meta_kubernetes_pod_name
+            target_label: pod
+          - source_labels:
+              - __meta_kubernetes_pod_label_app_kubernetes_io_name
+            target_label: workload
 
 alertmanager:
   enabled: true
@@ -107,3 +139,11 @@ additionalPrometheusRulesMap:
             annotations:
               summary: Pod is crash looping
               description: A pod has been in CrashLoopBackOff.
+          - alert: DeploymentUnavailable
+            expr: kube_deployment_status_replicas_unavailable{namespace="infrawatch"} > 0
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: Deployment has unavailable replicas
+              description: A deployment in the InfraWatch namespace has unavailable replicas for more than 2 minutes.

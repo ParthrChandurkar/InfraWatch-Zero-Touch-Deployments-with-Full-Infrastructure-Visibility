@@ -35,3 +35,11 @@ data:
             annotations:
               summary: Pod is crash looping
               description: A pod has been in CrashLoopBackOff.
+          - alert: DeploymentUnavailable
+            expr: kube_deployment_status_replicas_unavailable{namespace="infrawatch"} > 0
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: Deployment has unavailable replicas
+              description: A deployment in the InfraWatch namespace has unavailable replicas.

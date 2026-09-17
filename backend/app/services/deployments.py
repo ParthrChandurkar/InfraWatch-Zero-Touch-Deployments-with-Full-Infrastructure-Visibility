@@ -6,13 +6,14 @@ Deployment and Service manifests, then optionally applies them with kubectl.
 
 from __future__ import annotations
 
+import json
 import subprocess
 from typing import Any
 
 import yaml
 
 from app.config import Settings
-from app.repository import FileAuditLogRepository, FileDeploymentRepository, utc_now
+from app.repository import AuditLogRepository, DeploymentRepository, utc_now
 from app.schemas import DeploymentRecord, DeploymentRequest, DeploymentResponse, DeploymentStatus
 
 
@@ -26,8 +27,8 @@ class DeploymentService:
     def __init__(
         self,
         settings: Settings,
-        repository: FileDeploymentRepository,
-        audit_repository: FileAuditLogRepository,
+        repository: DeploymentRepository,
+        audit_repository: AuditLogRepository,
     ) -> None:
         self._settings = settings
         self._repository = repository
@@ -51,8 +52,8 @@ class DeploymentService:
         existing = self._repository.get(request.name)
         manifest = self._build_manifest(request, namespace)
 
-        status = DeploymentStatus.pending if self._settings.execute_kubectl else DeploymentStatus.running
-        message = "Deployment accepted and is pending Kubernetes rollout."
+        status = DeploymentStatus.deploying if self._settings.execute_kubectl else DeploymentStatus.running
+        message = "Deployment accepted; Kubernetes rollout verification is starting."
         if not self._settings.execute_kubectl:
             message = "Kubernetes manifest generated; kubectl execution is disabled in this hosted demo."
 
@@ -65,6 +66,10 @@ class DeploymentService:
             status=status,
             url=f"http://{request.name}.{namespace}.svc.cluster.local:{request.port}",
             commit_sha=request.commit_sha,
+            ready_replicas=request.replicas if not self._settings.execute_kubectl else 0,
+            available_replicas=request.replicas if not self._settings.execute_kubectl else 0,
+            observed_generation=None,
+            last_failure=None,
             message=message,
             created_at=existing.created_at if existing else now,
             updated_at=now,
@@ -85,28 +90,7 @@ class DeploymentService:
         )
 
         if self._settings.execute_kubectl:
-            try:
-                self._kubectl_apply(manifest)
-            except DeploymentExecutionError:
-                self._audit_repository.append(
-                    action="deployment.failed",
-                    service=record.name,
-                    status="failure",
-                    message="Kubernetes apply failed.",
-                    metadata={"namespace": record.namespace, "image": record.image},
-                )
-                raise
-            record.status = DeploymentStatus.running
-            record.message = "Kubernetes resources applied successfully."
-            record.updated_at = utc_now()
-            self._repository.upsert(record)
-            self._audit_repository.append(
-                action="deployment.applied",
-                service=record.name,
-                status="success",
-                message=record.message,
-                metadata={"namespace": record.namespace, "image": record.image},
-            )
+            record = self._apply_and_verify_rollout(record, manifest)
 
         return DeploymentResponse(deployment=record, kubernetes_manifest=manifest)
 
@@ -122,6 +106,11 @@ class DeploymentService:
                 message="Delete requested for a deployment that does not exist.",
             )
             return None
+
+        existing.status = DeploymentStatus.deleting
+        existing.message = "Deployment deletion requested."
+        existing.updated_at = utc_now()
+        self._repository.upsert(existing)
 
         if self._settings.execute_kubectl:
             try:
@@ -146,6 +135,95 @@ class DeploymentService:
         )
         return deleted
 
+    def _apply_and_verify_rollout(self, record: DeploymentRecord, manifest: dict[str, Any]) -> DeploymentRecord:
+        """Apply Kubernetes resources and mark success only after rollout verification."""
+
+        try:
+            self._kubectl_apply(manifest)
+            self._audit_repository.append(
+                action="deployment.applied",
+                service=record.name,
+                status="success",
+                message="Kubernetes manifest applied; waiting for rollout.",
+                metadata={"namespace": record.namespace, "image": record.image},
+            )
+
+            self._kubectl_rollout_status(record.name, record.namespace)
+            rollout_state = self._read_deployment_state(record.name, record.namespace)
+            ready_replicas = rollout_state["ready_replicas"]
+            available_replicas = rollout_state["available_replicas"]
+
+            if ready_replicas < record.replicas or available_replicas < record.replicas:
+                pod_detail = self._pod_failure_summary(record.name, record.namespace)
+                raise DeploymentExecutionError(
+                    pod_detail
+                    or (
+                        "Rollout finished but readiness verification failed: "
+                        f"{ready_replicas}/{record.replicas} ready, "
+                        f"{available_replicas}/{record.replicas} available."
+                    )
+                )
+
+            record.status = DeploymentStatus.running
+            record.ready_replicas = ready_replicas
+            record.available_replicas = available_replicas
+            record.observed_generation = rollout_state["observed_generation"]
+            record.last_failure = None
+            record.message = (
+                "Kubernetes rollout verified: "
+                f"{ready_replicas}/{record.replicas} replicas are Ready and available."
+            )
+            record.updated_at = utc_now()
+            self._repository.upsert(record)
+            self._audit_repository.append(
+                action="deployment.rollout_verified",
+                service=record.name,
+                status="success",
+                message=record.message,
+                metadata={
+                    "namespace": record.namespace,
+                    "image": record.image,
+                    "ready_replicas": ready_replicas,
+                    "available_replicas": available_replicas,
+                },
+            )
+            return record
+        except DeploymentExecutionError as exc:
+            failure_detail = str(exc)
+            try:
+                pod_detail = self._pod_failure_summary(record.name, record.namespace)
+                if pod_detail:
+                    failure_detail = f"{failure_detail}; pod detail: {pod_detail}"
+            except DeploymentExecutionError:
+                pass
+            record.status = DeploymentStatus.failed
+            record.ready_replicas = 0
+            record.available_replicas = 0
+            record.last_failure = failure_detail
+            record.message = f"Kubernetes rollout failed: {failure_detail}"
+            record.updated_at = utc_now()
+            try:
+                rollout_state = self._read_deployment_state(record.name, record.namespace)
+                record.ready_replicas = rollout_state["ready_replicas"]
+                record.available_replicas = rollout_state["available_replicas"]
+                record.observed_generation = rollout_state["observed_generation"]
+            except DeploymentExecutionError:
+                pass
+            self._repository.upsert(record)
+            self._audit_repository.append(
+                action="deployment.rollout_failed",
+                service=record.name,
+                status="failure",
+                message=record.message,
+                metadata={
+                    "namespace": record.namespace,
+                    "image": record.image,
+                    "ready_replicas": record.ready_replicas,
+                    "available_replicas": record.available_replicas,
+                },
+            )
+            return record
+
     def _build_manifest(self, request: DeploymentRequest, namespace: str) -> dict[str, Any]:
         """Build a Kubernetes List manifest for the service workload."""
 
@@ -154,7 +232,8 @@ class DeploymentService:
             "app.kubernetes.io/part-of": "infrawatch-managed",
             **request.labels,
         }
-        env = [{"name": key, "value": value} for key, value in sorted(request.environment.items())]
+        environment = {"INFRAWATCH_SERVICE_NAME": request.name, **request.environment}
+        env = [{"name": key, "value": value} for key, value in sorted(environment.items())]
 
         deployment = {
             "apiVersion": "apps/v1",
@@ -162,12 +241,18 @@ class DeploymentService:
             "metadata": {"name": request.name, "namespace": namespace, "labels": labels},
             "spec": {
                 "replicas": request.replicas,
+                "progressDeadlineSeconds": self._settings.rollout_timeout_seconds,
                 "selector": {"matchLabels": {"app.kubernetes.io/name": request.name}},
+                "strategy": {
+                    "type": "RollingUpdate",
+                    "rollingUpdate": {"maxSurge": 1, "maxUnavailable": 0},
+                },
                 "template": {
                     "metadata": {
                         "labels": labels,
                         "annotations": {
                             "prometheus.io/scrape": "true",
+                            "prometheus.io/path": "/metrics",
                             "prometheus.io/port": str(request.port),
                         },
                     },
@@ -217,6 +302,74 @@ class DeploymentService:
 
         self._run_kubectl(["apply", "-f", "-"], stdin=yaml.safe_dump(manifest))
 
+    def _kubectl_rollout_status(self, name: str, namespace: str) -> None:
+        """Wait for Kubernetes Deployment rollout completion."""
+
+        self._run_kubectl(
+            [
+                "rollout",
+                "status",
+                f"deployment/{name}",
+                "--namespace",
+                namespace,
+                f"--timeout={self._settings.rollout_timeout_seconds}s",
+            ],
+            timeout=self._settings.rollout_timeout_seconds + 15,
+        )
+
+    def _read_deployment_state(self, name: str, namespace: str) -> dict[str, int | None]:
+        """Read Kubernetes Deployment status fields used by the dashboard."""
+
+        output = self._run_kubectl(
+            [
+                "get",
+                f"deployment/{name}",
+                "--namespace",
+                namespace,
+                "-o",
+                "json",
+            ]
+        )
+        payload = json.loads(output)
+        status = payload.get("status", {})
+        return {
+            "ready_replicas": int(status.get("readyReplicas", 0)),
+            "available_replicas": int(status.get("availableReplicas", 0)),
+            "observed_generation": status.get("observedGeneration"),
+        }
+
+    def _pod_failure_summary(self, name: str, namespace: str) -> str:
+        """Inspect pods for common rollout failure reasons."""
+
+        output = self._run_kubectl(
+            [
+                "get",
+                "pods",
+                "--namespace",
+                namespace,
+                "-l",
+                f"app.kubernetes.io/name={name}",
+                "-o",
+                "json",
+            ]
+        )
+        payload = json.loads(output)
+        reasons: list[str] = []
+        for item in payload.get("items", []):
+            pod_name = item.get("metadata", {}).get("name", "unknown-pod")
+            for container in item.get("status", {}).get("containerStatuses", []):
+                state = container.get("state", {})
+                waiting = state.get("waiting")
+                terminated = state.get("terminated")
+                if waiting:
+                    reason = waiting.get("reason", "Waiting")
+                    message = waiting.get("message", "")
+                    reasons.append(f"{pod_name}: {reason} {message}".strip())
+                elif terminated:
+                    reason = terminated.get("reason", "Terminated")
+                    reasons.append(f"{pod_name}: {reason}")
+        return "; ".join(reasons)
+
     def _kubectl_delete(self, name: str, namespace: str) -> None:
         """Delete workload resources for one service."""
 
@@ -231,7 +384,7 @@ class DeploymentService:
             ]
         )
 
-    def _run_kubectl(self, args: list[str], stdin: str | None = None) -> None:
+    def _run_kubectl(self, args: list[str], stdin: str | None = None, timeout: int = 45) -> str:
         """Execute kubectl and surface a clean domain-specific error."""
 
         command = [self._settings.kubectl_binary, *args]
@@ -241,8 +394,9 @@ class DeploymentService:
             capture_output=True,
             check=False,
             text=True,
-            timeout=45,
+            timeout=timeout,
         )
         if result.returncode != 0:
             detail = result.stderr.strip() or result.stdout.strip() or "kubectl failed"
             raise DeploymentExecutionError(detail)
+        return result.stdout

@@ -31,6 +31,7 @@ def build_router() -> APIRouter:
             "kubernetes_execution": settings.execute_kubectl,
             "deployment_mode": "kubernetes" if settings.execute_kubectl else "manifest-simulation",
             "observability_mode": "prometheus-loki" if not settings.allow_mock_observability else "fallback-enabled",
+            "persistence_mode": "postgresql" if settings.database_url else "json-file",
         }
 
     @router.post(

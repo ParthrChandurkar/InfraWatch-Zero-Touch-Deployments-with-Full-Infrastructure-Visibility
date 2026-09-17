@@ -17,7 +17,9 @@ class DeploymentStatus(str, Enum):
     running = "Running"
     failed = "Failed"
     pending = "Pending"
+    deploying = "Deploying"
     deleting = "Deleting"
+    deleted = "Deleted"
 
 
 class DeploymentRequest(BaseModel):
@@ -56,6 +58,10 @@ class DeploymentRecord(BaseModel):
     status: DeploymentStatus
     url: str | None = None
     commit_sha: str | None = None
+    ready_replicas: int = 0
+    available_replicas: int = 0
+    observed_generation: int | None = None
+    last_failure: str | None = None
     message: str
     created_at: datetime
     updated_at: datetime

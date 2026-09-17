@@ -53,8 +53,10 @@ import type {
 const STATUS_THEME: Record<DeploymentStatus, { color: string; label: string; icon: ReactNode }> = {
   Running: { color: "#3ddc97", label: "Healthy", icon: <CheckCircle2 size={14} /> },
   Pending: { color: "#f5b942", label: "Pending", icon: <Clock size={14} /> },
+  Deploying: { color: "#4da3ff", label: "Deploying", icon: <RefreshCw size={14} /> },
   Failed: { color: "#ff5f6d", label: "Failed", icon: <AlertTriangle size={14} /> },
   Deleting: { color: "#9aa4b2", label: "Deleting", icon: <RefreshCw size={14} /> },
+  Deleted: { color: "#9aa4b2", label: "Deleted", icon: <Trash2 size={14} /> },
 };
 
 const EMPTY_METRICS: ServiceMetrics = {
@@ -105,7 +107,9 @@ function App() {
         Running: 0,
         Failed: 0,
         Pending: 0,
+        Deploying: 0,
         Deleting: 0,
+        Deleted: 0,
         replicas: 0,
       } as Record<DeploymentStatus, number> & { replicas: number },
     );
@@ -244,19 +248,28 @@ function App() {
     () =>
       liveChartData.length
         ? liveChartData
-        : selectedDeployment
+        : selectedDeployment && (isBrowserFallback || isHostedApi)
           ? buildDemoChartData(selectedDeployment.name)
           : [],
-    [liveChartData, selectedDeployment],
+    [isBrowserFallback, isHostedApi, liveChartData, selectedDeployment],
   );
-  const telemetryMode = liveChartData.length ? sourceLabel(metrics.source) : selectedDeployment ? "Demo baseline" : "Waiting";
+  const telemetryMode = liveChartData.length
+    ? sourceLabel(metrics.source)
+    : selectedDeployment && (isBrowserFallback || isHostedApi)
+      ? "Demo baseline"
+      : selectedDeployment
+        ? "No live data"
+        : "Waiting";
 
   const telemetry = useMemo(() => {
     const latest = chartData[chartData.length - 1];
     const latestErrorRate = Number(latest?.errors ?? 0);
     const healthScore = Math.max(
       0,
-      Math.min(100, Math.round(100 - summary.Failed * 20 - summary.Pending * 6 - latestErrorRate * 12)),
+      Math.min(
+        100,
+        Math.round(100 - summary.Failed * 20 - (summary.Pending + summary.Deploying) * 6 - latestErrorRate * 12),
+      ),
     );
 
     return {
@@ -268,7 +281,7 @@ function App() {
       peakMemory: maxValue(chartData.map((item) => Number(item.memory))),
       avgCpu: averageValue(chartData.map((item) => Number(item.cpu))),
     };
-  }, [chartData, summary.Failed, summary.Pending]);
+  }, [chartData, summary.Deploying, summary.Failed, summary.Pending]);
 
   const pipelineSteps = [
     { icon: <GitBranch size={17} />, label: "GitHub", value: "main synced", state: "ready" },
@@ -423,8 +436,19 @@ function App() {
               <Fact icon={<Layers size={17} />} label="Image" value={selectedDeployment?.image ?? "Waiting for deployment"} />
               <Fact icon={<Server size={17} />} label="Namespace" value={selectedDeployment?.namespace ?? "infrawatch"} />
               <Fact icon={<Zap size={17} />} label="Replicas" value={String(selectedDeployment?.replicas ?? 0)} />
+              <Fact
+                icon={<CheckCircle2 size={17} />}
+                label="Ready pods"
+                value={selectedDeployment ? `${selectedDeployment.ready_replicas ?? 0}/${selectedDeployment.replicas}` : "0/0"}
+              />
               <Fact icon={<Clock size={17} />} label="Updated" value={selectedDeployment ? relativeTime(selectedDeployment.updated_at) : "Not available"} />
             </div>
+            {selectedDeployment?.last_failure && (
+              <div className="rollout-failure">
+                <AlertTriangle size={16} />
+                <span>{selectedDeployment.last_failure}</span>
+              </div>
+            )}
           </section>
 
           <section className="panel deploy-panel">
@@ -621,7 +645,11 @@ function App() {
             <Signal label="Metrics path" value={telemetryMode} state="ok" />
             <Signal label="Average CPU" value={`${telemetry.avgCpu.toFixed(2)} cores`} state="ok" />
             <Signal label="Peak memory" value={`${Math.round(telemetry.peakMemory)} MB`} state="ok" />
-            <Signal label="Pending work" value={`${summary.Pending} rollout events`} state={summary.Pending ? "warn" : "ok"} />
+            <Signal
+              label="Pending work"
+              value={`${summary.Pending + summary.Deploying} rollout events`}
+              state={summary.Pending + summary.Deploying ? "warn" : "ok"}
+            />
           </section>
         </div>
       </main>

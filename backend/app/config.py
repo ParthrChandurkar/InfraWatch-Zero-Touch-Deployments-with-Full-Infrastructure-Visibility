@@ -7,7 +7,7 @@ cluster-specific values never need to be hardcoded in source control.
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     app_name: str = "InfraWatch API"
     environment: str = "development"
     log_level: str = "INFO"
+    service_name: str = "infrawatch-backend"
 
     cors_origins: Annotated[
         list[str],
@@ -31,10 +32,15 @@ class Settings(BaseSettings):
 
     state_file: str = "/tmp/infrawatch/deployments.json"
     audit_file: str = "/tmp/infrawatch/audit-log.json"
+    database_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("INFRAWATCH_DATABASE_URL", "DATABASE_URL"),
+    )
     execute_kubectl: bool = False
     seed_demo_data: bool = False
     kubectl_binary: str = "kubectl"
     kubectl_namespace: str = "infrawatch"
+    rollout_timeout_seconds: int = Field(default=180, ge=30, le=900)
 
     prometheus_url: str = "http://prometheus:9090"
     loki_url: str = "http://loki:3100"

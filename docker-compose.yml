@@ -9,6 +9,8 @@ services:
       INFRAWATCH_EXECUTE_KUBECTL: "false"
       INFRAWATCH_PROMETHEUS_URL: http://prometheus:9090
       INFRAWATCH_LOKI_URL: http://loki:3100
+      INFRAWATCH_ALLOW_MOCK_OBSERVABILITY: "false"
+      INFRAWATCH_SERVICE_NAME: infrawatch-backend
       INFRAWATCH_STATE_FILE: /data/deployments.json
       INFRAWATCH_AUDIT_FILE: /data/audit-log.json
       DATABASE_URL: postgresql://${POSTGRES_USER:-infrawatch}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-infrawatch}
@@ -24,13 +26,15 @@ services:
       loki:
         condition: service_started
     networks:
-      - infrawatch
+      infrawatch:
+        aliases:
+          - infrawatch-backend
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     container_name: infrawatch-frontend
     ports:
       - "3000:80"

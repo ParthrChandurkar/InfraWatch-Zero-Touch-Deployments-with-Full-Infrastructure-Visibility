@@ -1,5 +1,5 @@
 // Shared TypeScript types for InfraWatch API responses.
-export type DeploymentStatus = "Running" | "Failed" | "Pending" | "Deleting";
+export type DeploymentStatus = "Running" | "Failed" | "Pending" | "Deploying" | "Deleting" | "Deleted";
 
 export interface DeploymentRecord {
   name: string;
@@ -10,6 +10,10 @@ export interface DeploymentRecord {
   status: DeploymentStatus;
   url?: string;
   commit_sha?: string;
+  ready_replicas?: number;
+  available_replicas?: number;
+  observed_generation?: number;
+  last_failure?: string;
   message: string;
   created_at: string;
   updated_at: string;

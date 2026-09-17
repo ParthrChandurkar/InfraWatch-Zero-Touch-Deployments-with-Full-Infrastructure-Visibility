@@ -33,7 +33,6 @@ spec:
                 name: infrawatch-backend-config
             - secretRef:
                 name: infrawatch-secrets
-                optional: true
           volumeMounts:
             - name: backend-state
               mountPath: /data

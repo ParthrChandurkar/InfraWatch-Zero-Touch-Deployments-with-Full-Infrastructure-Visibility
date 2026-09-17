@@ -610,6 +610,20 @@ a {
   white-space: nowrap;
 }
 
+.rollout-failure {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-top: 14px;
+  border: 1px solid #6f3340;
+  border-radius: 8px;
+  background: #2a1218;
+  color: #ffb8c1;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .deploy-form {
   display: flex;
   flex-direction: column;
