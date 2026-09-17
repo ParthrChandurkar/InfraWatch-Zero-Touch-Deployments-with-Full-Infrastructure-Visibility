@@ -74,6 +74,8 @@ Evidence needed:
 - Multiple trials.
 - Calculation.
 
+Use `docs/MEASUREMENT.md` and the scripts in `scripts/` to collect evidence before repeating this number in an interview.
+
 ## Claim: full infrastructure visibility
 
 Current implementation:
@@ -127,4 +129,3 @@ Verified?
 
 - Config exists.
 - Runtime proof requires running Prometheus/Alertmanager in Minikube.
-

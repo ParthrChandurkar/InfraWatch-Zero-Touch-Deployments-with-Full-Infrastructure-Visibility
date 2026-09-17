@@ -452,6 +452,7 @@ KUBE_CONFIG_B64
 | `docs/TROUBLESHOOTING.md` | SRE-style failure diagnosis commands and recovery steps. |
 | `docs/INTERVIEW_DEMO.md` | 10-15 minute Red Hat SRE interview demo script. |
 | `docs/CV_CLAIM_AUDIT.md` | Honest audit of production-grade, zero-touch, visibility, log-streaming, and 60% claims. |
+| `docs/MEASUREMENT.md` | Reproducible process for deployment-cycle and API-latency measurements. |
 | `docs/INTERVIEW_KNOWLEDGE_MAP.md` | What to learn to defend each technology in the project. |
 | `docs/INTERVIEW_QUESTIONS.md` | Project-specific interview question bank. |
 | `docs/REDHAT_INTERVIEW_BRIEF.md` | Concise study brief for the Red Hat SRE interview. |
