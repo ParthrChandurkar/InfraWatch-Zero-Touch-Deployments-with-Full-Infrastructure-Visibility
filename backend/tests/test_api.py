@@ -1,9 +1,12 @@
 """API regression tests for the InfraWatch backend."""
 
+import asyncio
+
 from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from app.services.observability import PrometheusClient
 
 
 def build_client(tmp_path) -> TestClient:
@@ -122,3 +125,19 @@ def test_hosted_demo_can_seed_sample_services(tmp_path) -> None:
         "checkout-api",
         "payments-worker",
     }
+
+
+def test_empty_prometheus_series_falls_back_to_mock_metrics() -> None:
+    """A reachable but empty Prometheus should not leave demo dashboards blank."""
+
+    settings = Settings(environment="test", allow_mock_observability=True)
+    client = PrometheusClient(settings)
+
+    async def empty_query(_query: str):
+        return []
+
+    client._query_range = empty_query  # type: ignore[method-assign]
+
+    metrics = asyncio.run(client.service_metrics("catalog-api"))
+    assert metrics.source == "mock"
+    assert len(metrics.cpu_cores) == 15

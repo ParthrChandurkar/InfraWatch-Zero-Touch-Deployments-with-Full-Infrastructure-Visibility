@@ -295,6 +295,18 @@ Grafana:              http://localhost:3001
 Loki:                 http://localhost:3100
 ```
 
+If another local project already uses these ports, override them in `.env` before starting Compose:
+
+```text
+FRONTEND_PORT=13000
+BACKEND_PORT=18000
+POSTGRES_PORT=15432
+PROMETHEUS_PORT=19090
+GRAFANA_PORT=13001
+LOKI_PORT=13100
+ALERTMANAGER_PORT=19093
+```
+
 Demo checklist:
 
 - Confirm the dashboard loads and service fleet cards render.
@@ -303,12 +315,15 @@ Demo checklist:
 - Confirm the audit trail records the deploy action.
 - Open Grafana to show the monitoring layer behind the product UI.
 
+By default, the local Compose stack enables `INFRAWATCH_ALLOW_MOCK_OBSERVABILITY=true`. The backend still tries Prometheus and Loki first, but if there are no workload time series or log streams yet it returns realistic mock data marked with `source: "mock"` so the dashboard is useful immediately. Set the flag to `false` when you want strict Prometheus/Loki-only behavior.
+
 ## Troubleshooting
 
 | Symptom | What to check |
 |---|---|
 | Dashboard loads but API calls fail | Confirm the backend is running and `VITE_API_BASE_URL` points to the right FastAPI URL. |
 | Docker Compose refuses to start PostgreSQL or Grafana | Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` and `GRAFANA_ADMIN_PASSWORD`. |
+| Docker Compose reports that 3000, 8000, or 5432 is already allocated | Set `FRONTEND_PORT`, `BACKEND_PORT`, or `POSTGRES_PORT` in `.env` to free host ports, then run `docker compose up -d --build` again. |
 | Deployments stay simulated | This is expected unless `INFRAWATCH_EXECUTE_KUBECTL=true` is set in an environment with a valid kubeconfig. |
 | Metrics or logs look mocked | Prometheus and Loki data is simulated until the backend can reach real `INFRAWATCH_PROMETHEUS_URL` and `INFRAWATCH_LOKI_URL` services. |
 | Hosted demo state resets | Vercel serverless storage is ephemeral; use the Docker or Kubernetes path for durable local state. |

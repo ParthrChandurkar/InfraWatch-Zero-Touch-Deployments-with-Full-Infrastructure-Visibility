@@ -43,6 +43,8 @@ class PrometheusClient:
             error_rate = await self._query_range(
                 f'sum(rate(http_requests_total{{service="{service}",status=~"5.."}}[2m]))'
             )
+            if self._settings.allow_mock_observability and not all([cpu, memory, request_rate, error_rate]):
+                return self._mock_metrics(service)
             return ServiceMetrics(
                 service=service,
                 cpu_cores=cpu,
@@ -135,6 +137,8 @@ class LokiClient:
                 response.raise_for_status()
             payload = response.json()
             lines = self._parse_loki_streams(payload)
+            if self._settings.allow_mock_observability and not lines:
+                return self._mock_logs(service, limit)
             return LogsResponse(service=service, lines=lines[:limit], source="loki")
         except (httpx.HTTPError, KeyError, IndexError, ValueError):
             if not self._settings.allow_mock_observability:
