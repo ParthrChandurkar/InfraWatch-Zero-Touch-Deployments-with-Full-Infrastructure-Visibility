@@ -7,7 +7,14 @@ FastAPI application state.
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from prometheus_client import Counter, Histogram
 
-from app.schemas import AuditLogEntry, DeploymentRequest, DeploymentResponse, LogsResponse, ServiceMetrics
+from app.schemas import (
+    AuditLogEntry,
+    DeploymentRecord,
+    DeploymentRequest,
+    DeploymentResponse,
+    LogsResponse,
+    ServiceMetrics,
+)
 from app.services.deployments import DeploymentExecutionError
 
 DEPLOYMENT_COUNTER = Counter("infrawatch_deployments_total", "Deployment actions accepted by InfraWatch")
@@ -106,5 +113,18 @@ def build_router() -> APIRouter:
             if deleted is None:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deployment not found")
             return {"status": "deleted", "name": name}
+
+    @router.post("/deployment/{name}/rollback", response_model=DeploymentRecord, tags=["deployments"])
+    async def rollback_deployment(name: str, request: Request) -> DeploymentRecord:
+        """Rollback a deployment with Kubernetes rollout undo."""
+
+        with REQUEST_TIMER.labels(route="/deployment/{name}/rollback").time():
+            try:
+                rolled_back = request.app.state.deployment_service.rollback(name)
+            except DeploymentExecutionError as exc:
+                raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+            if rolled_back is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deployment not found")
+            return rolled_back
 
     return router

@@ -759,6 +759,16 @@ td {
   color: #ff6b7a;
 }
 
+.table-actions {
+  display: inline-flex;
+  gap: 7px;
+}
+
+.table-action.rollback {
+  background: #172231;
+  color: #79bdff;
+}
+
 .empty-row {
   color: #9aa4b2;
   text-align: center;

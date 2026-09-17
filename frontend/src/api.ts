@@ -107,6 +107,23 @@ export function deleteDeployment(name: string): Promise<{ status: string; name: 
   );
 }
 
+export function rollbackDeployment(name: string): Promise<DeploymentRecord> {
+  return withDemoFallback(
+    () => request<DeploymentRecord>(`/deployment/${name}/rollback`, { method: "POST" }),
+    () => {
+      const deployment = listDemoDeployments().find((item) => item.name === name);
+      if (!deployment) {
+        throw new Error("Deployment not found");
+      }
+      return {
+        ...deployment,
+        message: "Rollback is simulated in the browser sandbox. Real rollback uses kubectl rollout undo.",
+        updated_at: new Date().toISOString(),
+      };
+    },
+  );
+}
+
 export function getMetrics(service: string): Promise<ServiceMetrics> {
   return withDemoFallback(
     () => request<ServiceMetrics>(`/metrics/${service}`),

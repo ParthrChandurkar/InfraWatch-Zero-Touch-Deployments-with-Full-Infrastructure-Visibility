@@ -27,6 +27,7 @@ metrics-server -> HPA -> backend replicas
 5. FastAPI waits for `kubectl rollout status`.
 6. FastAPI verifies ready and available replicas.
 7. State becomes `Running` or `Failed`.
+8. Rollback uses `kubectl rollout undo` and then verifies rollout status again.
 
 ## 5. Observability workflow
 
@@ -106,4 +107,3 @@ kubectl top pods -n infrawatch
 - Do not claim the 60% number without measurements.
 - Do not claim enterprise production readiness.
 - Do not claim GitHub Actions can reach laptop Minikube without network setup.
-

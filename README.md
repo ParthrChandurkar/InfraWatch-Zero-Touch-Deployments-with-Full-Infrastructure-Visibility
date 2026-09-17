@@ -323,6 +323,7 @@ Demo checklist:
 | GET | `/metrics/{service}` | Get service metrics |
 | GET | `/logs/{service}` | Get service logs |
 | DELETE | `/deployment/{name}` | Delete a deployment |
+| POST | `/deployment/{name}/rollback` | Roll back a Kubernetes deployment to its previous revision |
 | GET | `/healthz` | Health check |
 | GET | `/internal/metrics` | Prometheus scrape endpoint |
 

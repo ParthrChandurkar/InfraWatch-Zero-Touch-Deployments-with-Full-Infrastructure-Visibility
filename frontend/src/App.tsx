@@ -40,6 +40,7 @@ import {
   listAuditLogs,
   listDeployments,
   resetSandbox,
+  rollbackDeployment,
   subscribeToApiFallback,
 } from "./api";
 import type {
@@ -216,6 +217,21 @@ function App() {
       setSelected("");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Delete failed");
+    }
+  }
+
+  async function handleRollback(name: string) {
+    if (!window.confirm(`Rollback ${name} to the previous Kubernetes revision?`)) {
+      return;
+    }
+    setError("");
+    try {
+      await rollbackDeployment(name);
+      await refreshDeployments();
+      await refreshAuditLogs();
+      setSelected(name);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Rollback failed");
     }
   }
 
@@ -563,9 +579,19 @@ function App() {
                       <td className="image-cell">{deployment.image}</td>
                       <td>{relativeTime(deployment.updated_at)}</td>
                       <td>
-                        <button className="table-action" type="button" onClick={() => handleDelete(deployment.name)} title="Delete deployment">
-                          <Trash2 size={15} />
-                        </button>
+                        <div className="table-actions">
+                          <button
+                            className="table-action rollback"
+                            type="button"
+                            onClick={() => handleRollback(deployment.name)}
+                            title="Rollback deployment"
+                          >
+                            <RefreshCw size={15} />
+                          </button>
+                          <button className="table-action" type="button" onClick={() => handleDelete(deployment.name)} title="Delete deployment">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

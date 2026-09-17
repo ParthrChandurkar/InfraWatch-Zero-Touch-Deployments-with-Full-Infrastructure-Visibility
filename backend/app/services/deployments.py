@@ -135,6 +135,81 @@ class DeploymentService:
         )
         return deleted
 
+    def rollback(self, name: str) -> DeploymentRecord | None:
+        """Rollback a Kubernetes deployment to the previous ReplicaSet revision."""
+
+        existing = self._repository.get(name)
+        if existing is None:
+            self._audit_repository.append(
+                action="deployment.rollback_missing",
+                service=name,
+                status="not_found",
+                message="Rollback requested for a deployment that does not exist.",
+            )
+            return None
+
+        if not self._settings.execute_kubectl:
+            self._audit_repository.append(
+                action="deployment.rollback_simulated",
+                service=existing.name,
+                status="skipped",
+                message="Rollback requires real Kubernetes execution; demo mode left deployment unchanged.",
+                metadata={"namespace": existing.namespace},
+            )
+            existing.message = "Rollback skipped because Kubernetes execution is disabled in Demo Mode."
+            existing.updated_at = utc_now()
+            return self._repository.upsert(existing)
+
+        existing.status = DeploymentStatus.deploying
+        existing.message = "Rollback requested; waiting for Kubernetes rollout undo."
+        existing.last_failure = None
+        existing.updated_at = utc_now()
+        self._repository.upsert(existing)
+
+        try:
+            self._kubectl_rollout_undo(existing.name, existing.namespace)
+            self._kubectl_rollout_status(existing.name, existing.namespace)
+            rollout_state = self._read_deployment_state(existing.name, existing.namespace)
+            existing.status = DeploymentStatus.running
+            existing.ready_replicas = rollout_state["ready_replicas"]
+            existing.available_replicas = rollout_state["available_replicas"]
+            existing.observed_generation = rollout_state["observed_generation"]
+            existing.message = (
+                "Rollback completed and rollout verified: "
+                f"{existing.ready_replicas}/{existing.replicas} replicas are Ready."
+            )
+            existing.updated_at = utc_now()
+            self._repository.upsert(existing)
+            self._audit_repository.append(
+                action="deployment.rollback_verified",
+                service=existing.name,
+                status="success",
+                message=existing.message,
+                metadata={"namespace": existing.namespace, "image": existing.image},
+            )
+        except DeploymentExecutionError as exc:
+            detail = str(exc)
+            try:
+                pod_detail = self._pod_failure_summary(existing.name, existing.namespace)
+                if pod_detail:
+                    detail = f"{detail}; pod detail: {pod_detail}"
+            except DeploymentExecutionError:
+                pass
+            existing.status = DeploymentStatus.failed
+            existing.last_failure = detail
+            existing.message = f"Rollback failed: {detail}"
+            existing.updated_at = utc_now()
+            self._repository.upsert(existing)
+            self._audit_repository.append(
+                action="deployment.rollback_failed",
+                service=existing.name,
+                status="failure",
+                message=existing.message,
+                metadata={"namespace": existing.namespace, "image": existing.image},
+            )
+
+        return existing
+
     def _apply_and_verify_rollout(self, record: DeploymentRecord, manifest: dict[str, Any]) -> DeploymentRecord:
         """Apply Kubernetes resources and mark success only after rollout verification."""
 
@@ -315,6 +390,19 @@ class DeploymentService:
                 f"--timeout={self._settings.rollout_timeout_seconds}s",
             ],
             timeout=self._settings.rollout_timeout_seconds + 15,
+        )
+
+    def _kubectl_rollout_undo(self, name: str, namespace: str) -> None:
+        """Rollback a Kubernetes Deployment to its previous revision."""
+
+        self._run_kubectl(
+            [
+                "rollout",
+                "undo",
+                f"deployment/{name}",
+                "--namespace",
+                namespace,
+            ]
         )
 
     def _read_deployment_state(self, name: str, namespace: str) -> dict[str, int | None]:

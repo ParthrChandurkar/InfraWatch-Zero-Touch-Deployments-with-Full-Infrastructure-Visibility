@@ -145,6 +145,16 @@ Recover:
 kubectl delete -f k8s/failure-demos/crashloop.yaml
 ```
 
+Rollback a bad managed deployment:
+
+```bash
+kubectl rollout history deployment/demo-api -n infrawatch
+kubectl rollout undo deployment/demo-api -n infrawatch
+kubectl rollout status deployment/demo-api -n infrawatch
+```
+
+Or use the dashboard rollback button beside the service in the inventory table.
+
 ## Part 8 - CI/CD, 2 minutes
 
 Show `.github/workflows/ci-cd.yml`.
@@ -157,4 +167,3 @@ Explain:
 - DockerHub secrets are required.
 - Kubernetes deploy requires `KUBE_CONFIG_B64` for a reachable cluster.
 - A local laptop Minikube is not automatically reachable from GitHub-hosted runners.
-

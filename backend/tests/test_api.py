@@ -80,6 +80,28 @@ def test_unknown_deployment_delete_returns_404(tmp_path) -> None:
     assert audit_logs.json()[0]["action"] == "deployment.delete_missing"
 
 
+def test_demo_rollback_is_audited_without_kubectl(tmp_path) -> None:
+    """Rollback is safe in demo mode and records that no cluster action happened."""
+
+    client = build_client(tmp_path)
+    payload = {
+        "name": "rollback-api",
+        "image": "docker.io/example/rollback-api:latest",
+        "replicas": 1,
+        "port": 8080,
+    }
+
+    assert client.post("/deploy", json=payload).status_code == 202
+    rollback = client.post("/deployment/rollback-api/rollback")
+    assert rollback.status_code == 200
+    assert rollback.json()["name"] == "rollback-api"
+    assert "Demo Mode" in rollback.json()["message"]
+
+    audit_logs = client.get("/audit-logs")
+    assert audit_logs.status_code == 200
+    assert audit_logs.json()[0]["action"] == "deployment.rollback_simulated"
+
+
 def test_hosted_demo_can_seed_sample_services(tmp_path) -> None:
     """Hosted demo runtimes start with useful sample data when explicitly enabled."""
 

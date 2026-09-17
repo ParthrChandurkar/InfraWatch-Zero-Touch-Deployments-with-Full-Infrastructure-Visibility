@@ -77,6 +77,19 @@ The frontend container uses Nginx to serve static assets and proxy `/api/*` to `
 6. The deployment is marked `Running` only after rollout verification.
 7. Rollout failures are stored as `Failed` with failure details.
 
+## Rollback flow
+
+```text
+React rollback action
+  -> POST /deployment/{name}/rollback
+  -> kubectl rollout undo deployment/{name}
+  -> kubectl rollout status
+  -> ready/available replica verification
+  -> audit event
+```
+
+Rollback is intentionally simple. It uses standard Kubernetes Deployment revision history instead of a custom release database.
+
 ## Metrics flow
 
 ```text
@@ -186,4 +199,3 @@ FastAPI
 ```
 
 Real local Kubernetes mode should use PostgreSQL. Demo Mode and tests can safely use JSON fallback.
-
