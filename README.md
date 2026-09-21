@@ -1,301 +1,202 @@
-# InfraWatch: Zero-Touch Deployments with Full Infrastructure Visibility
+# 🚀 InfraWatch
 
-InfraWatch is a cloud-native DevOps control plane for deploying containerized services and watching their infrastructure signals from one dashboard. It combines a deployment API, a React command center, Prometheus metrics, Loki logs, Grafana dashboards, Docker Compose, Kubernetes manifests, Terraform/Helm infrastructure, and GitHub Actions CI/CD.
+**Zero-touch deployment workflow + infrastructure visibility for containerized services.**
 
-Think of it as a compact internal platform: a team can ship a service, inspect health, read logs, and prove what changed without jumping between five tools.
+InfraWatch is a full-stack DevOps/SRE project that lets you submit a containerized service, track its deployment state, inspect metrics/logs, and review an audit trail from one dashboard.
 
-## Live Public Demo
+It is intentionally honest about its modes:
 
-Open **[infrawatch-platform.vercel.app](https://infrawatch-platform.vercel.app)** to use InfraWatch immediately - no account or credentials required. The shorter `infrawatch.vercel.app` alias is already owned by another Vercel account, so this deployment uses the correctly spelled `infrawatch-platform` project name.
+- 🌐 **Hosted Vercel demo:** interactive portfolio/demo environment with simulated Kubernetes execution and simulated telemetry.
+- 🐳 **Docker Compose local stack:** runs the frontend, FastAPI backend, PostgreSQL, Prometheus, Grafana, Loki, Alertmanager, and Promtail locally.
+- ☸️ **Kubernetes mode:** applies generated Kubernetes manifests with `kubectl` when a real cluster and credentials are configured.
+- 🔁 **GitHub Actions CI/CD:** validates, builds, publishes Docker images, and deploys to Kubernetes only when required repository secrets are configured.
 
-The hosted dashboard is connected to a real FastAPI service at **[infrawatch-api.vercel.app](https://infrawatch-api.vercel.app)**. FastAPI validates deployment requests, generates Kubernetes manifests, records demo state and audit events, and serves metrics/log responses. Because Vercel does not provide a Kubernetes cluster, Prometheus, or Loki, workload execution and observability data remain explicitly simulated in the public demo.
+> ⚠️ InfraWatch does **not** pretend Vercel is running Kubernetes. Public hosted mode is a demo. Real Kubernetes deployment requires a real Kubernetes cluster.
 
-> [!IMPORTANT]
-> The public site runs in **Demo Mode**. It is an interactive portfolio deployment, not a claim that a Kubernetes cluster is running inside Vercel. The dashboard labels simulated infrastructure data clearly and falls back to browser mocks if the hosted API is unavailable.
+---
 
-## Deployment Modes
+## ✨ What InfraWatch Does
 
-| Capability | Public Demo Mode | Full Platform Deployment |
-|---|---|---|
-| React dashboard | Live on Vercel | Live behind the cluster ingress/frontend service |
-| FastAPI control plane | Live on Vercel Functions | Live as a Kubernetes deployment |
-| Deploy action | Validates input and generates a Kubernetes manifest | Applies workloads through `kubectl` |
-| Service inventory | Seeded demo records in ephemeral serverless storage | Requires a durable repository adapter for multi-instance production |
-| Metrics | Realistic mock CPU, memory, traffic, and error-rate series | Prometheus queries against running workloads |
-| Logs | Realistic mock application and operational events | Loki streams collected by Promtail |
-| Grafana | Not hosted in the public demo | Provisioned with the included dashboards |
-| Infrastructure required | None for reviewers | Kubernetes, registry access, Prometheus, Loki, Grafana, and persistent storage |
+- 🚀 Deploy or update a service by entering:
+  - service name
+  - container image
+  - replica count
+  - service port
+- 📦 Generate Kubernetes `Deployment` and `Service` manifests.
+- ✅ In Kubernetes mode, run `kubectl apply`, wait for rollout status, and verify ready/available replicas.
+- 🔁 Roll back a managed deployment with Kubernetes rollout undo.
+- 📊 Show CPU, memory, request-rate, and error-rate charts.
+- 📜 Show recent service logs.
+- 🧾 Store deployment and delete actions in an audit trail.
+- 🐘 Use PostgreSQL when `DATABASE_URL` is configured, with JSON-file fallback for simple demo/test environments.
+- 📈 Expose Prometheus-compatible FastAPI metrics at `/metrics` and `/internal/metrics`.
+- 🧪 Run backend tests, frontend lint/build, and Docker image builds through GitHub Actions.
 
-The public demo makes the product workflow reviewable without asking visitors to install local infrastructure. The repository contains the manifests and configuration for the full deployment; those components become real only when connected to an actual Kubernetes environment.
+---
 
-## What You Can Demo
+## ✅ What Is Real vs Demo
 
-- Trigger service deployments from the dashboard or the FastAPI API.
-- Track service inventory, replica counts, rollout state, and failures.
-- Inspect CPU, memory, request-rate, and error-rate telemetry.
-- Read recent service logs and audit events in the same workflow.
-- Run the full stack locally with Docker Compose.
-- Move toward Kubernetes delivery with CI/CD, DockerHub, Terraform, Helm, Prometheus, Grafana, Loki, and Promtail.
+| Feature | Hosted Vercel Demo | Docker Compose Local | Kubernetes Mode |
+|---|---|---|---|
+| React dashboard | ✅ Real | ✅ Real | ✅ Real |
+| FastAPI backend | ✅ Real | ✅ Real | ✅ Real |
+| PostgreSQL persistence | ❌ Not on Vercel | ✅ Real | ✅ Real when configured |
+| Kubernetes workload creation | ❌ Simulated | ❌ Simulated by default | ✅ Real with `INFRAWATCH_EXECUTE_KUBECTL=true` |
+| Metrics/logs | 🧪 Realistic mock fallback | 🧪 Mock fallback unless workloads emit data | ✅ Prometheus/Loki when configured |
+| Grafana dashboards | ❌ Not hosted on Vercel | ✅ Local Grafana | ✅ Cluster Grafana |
+| CI/CD deployment | ❌ Not automatic without secrets | N/A | ✅ With DockerHub + kubeconfig secrets |
 
-## Repository Highlights
+If you are opening the public site, you are using **Demo Mode**. Demo Mode is useful because the dashboard remains interactive without asking anyone to install Kubernetes.
 
-- A FastAPI backend that exposes deployment, inventory, audit, metrics, logs, health, and Prometheus-compatible scrape endpoints.
-- A React/Vite dashboard built for deploy, observe, inspect, and delete workflows.
-- Docker Compose wiring for local backend, frontend, PostgreSQL, Prometheus, Grafana, Loki, and Promtail services.
-- Kubernetes manifests for the InfraWatch namespace, backend, frontend, database, and supporting configuration.
-- Terraform and Helm setup for the monitoring and logging stack.
-- GitHub Actions automation for linting, testing, building images, publishing to DockerHub, and applying Kubernetes manifests.
+---
 
-## Fast Reviewer Path
+## 🌍 Live Demo
 
-1. Open the [public InfraWatch demo](https://infrawatch-platform.vercel.app).
-2. Select a service and review metrics, logs, deployment inventory, and audit history.
-3. Deploy a demo service such as `jobs-api`, then update or remove it.
-4. Open the [live FastAPI docs](https://infrawatch-api.vercel.app/docs) and inspect `/healthz` to see the active hosted capabilities.
-5. For real workload execution and the full observability stack, run the Docker/Kubernetes environment and connect FastAPI to kubectl, Prometheus, and Loki.
+- Frontend: [https://infrawatch-platform.vercel.app](https://infrawatch-platform.vercel.app)
+- API: [https://infrawatch-api.vercel.app](https://infrawatch-api.vercel.app)
+- API health: [https://infrawatch-api.vercel.app/healthz](https://infrawatch-api.vercel.app/healthz)
+- API docs: [https://infrawatch-api.vercel.app/docs](https://infrawatch-api.vercel.app/docs)
 
-## Project Screenshot
+The public demo uses the correctly spelled **InfraWatch** name. The shorter `infrawatch.vercel.app` alias is not used because it is already owned by another Vercel account.
 
-![InfraWatch Command Center](docs/screenshots/infrawatch-command-center.png)
+---
 
-## Architecture Diagram
-
-**Diagram name:** InfraWatch End-to-End Architecture
-
-This diagram describes the **full platform deployment**. In the public Vercel demo, the Kubernetes, Prometheus, Loki, and Grafana nodes are replaced by realistic mock responses.
+## 🧱 Architecture
 
 ```mermaid
 flowchart LR
-    Dev[Developer] --> GitHub[GitHub Push]
-    GitHub --> Actions[GitHub Actions]
-    Actions --> DockerHub[DockerHub Images]
-    Actions --> K8S[Kubernetes Deploy]
-    K8S --> Apps[Running Services]
-    Apps --> Prometheus[Prometheus Metrics]
-    Apps --> Loki[Loki Logs]
-    Prometheus --> Grafana[Grafana Dashboards]
-    Loki --> API[FastAPI Backend]
-    Prometheus --> API
-    API --> UI[React Dashboard]
+    User[User] --> UI[React Dashboard]
+    UI --> API[FastAPI Backend]
+    API --> Store[(PostgreSQL or JSON State)]
+    API --> Kube[kubectl / Kubernetes API]
+    Kube --> Workloads[Managed Services]
+    Workloads --> Prom[Prometheus]
+    Workloads --> Loki[Loki]
+    Prom --> API
+    Loki --> API
+    Prom --> Grafana[Grafana Dashboards]
 ```
 
-System flow:
+In Demo Mode, the `kubectl`, Prometheus, and Loki paths are replaced by safe simulated responses.
 
-1. Developer pushes code to GitHub.
-2. GitHub Actions runs tests and builds Docker images.
-3. Images are pushed to DockerHub.
-4. Kubernetes applies the latest deployment.
-5. Prometheus collects service metrics.
-6. Loki collects runtime logs through Promtail.
-7. FastAPI exposes deployment, metrics, logs, health, and audit APIs.
-8. React turns those signals into a single command-center dashboard.
-9. Grafana provides deeper operational dashboards for infrastructure review.
+---
 
-## Tech Stack
+## 🧰 Tech Stack
 
-| Area | Technology |
+| Area | Tools |
 |---|---|
-| Backend | Python, FastAPI |
-| Frontend | React, Vite, TypeScript |
-| Local stack | Docker Compose |
-| Containers | Docker |
-| Orchestration | Kubernetes, Minikube |
-| CI/CD | GitHub Actions |
-| Infrastructure | Terraform, Helm |
-| Metrics | Prometheus, Grafana |
-| Logs | Loki, Promtail |
-| Database | PostgreSQL |
+| Frontend | React, Vite, TypeScript, Nginx |
+| Backend | Python, FastAPI, Pydantic |
+| State | PostgreSQL, JSON fallback |
+| Containers | Docker, Docker Compose |
+| Orchestration | Kubernetes manifests, Minikube-compatible setup |
+| Observability | Prometheus, Grafana, Loki, Promtail, Alertmanager |
+| Infrastructure config | Terraform, Helm values |
+| CI/CD | GitHub Actions, Docker image build/publish/deploy flow |
 
-## Project Structure
+---
+
+## 📁 Project Structure
 
 ```text
-backend/                  FastAPI backend
-frontend/                 React dashboard
-k8s/                      Kubernetes manifests
-terraform/                Terraform + Helm setup
-monitoring/               Prometheus, Grafana, Alertmanager config
-logging/                  Loki and Promtail config
-.github/workflows/        GitHub Actions pipeline
-docs/screenshots/         README and demo images
-docker-compose.yml        Local full-stack setup
-requirements.txt          Root Python dependency file
-Makefile                  Common commands
+backend/                  FastAPI API, deployment logic, observability clients
+frontend/                 React dashboard served by Nginx
+k8s/                      Kubernetes namespace, services, deployments, HPA, secrets examples
+terraform/                Helm-based monitoring/logging stack setup
+monitoring/               Prometheus, Grafana, and Alertmanager config
+logging/                  Loki/Promtail config
+scripts/                  Utility scripts for alerts and measurements
+.github/workflows/        CI/CD pipeline
+docker-compose.yml        Local full-stack runtime
 ```
 
-## Prerequisites
+Dockerfiles are intentionally service-specific:
 
-Install these tools:
+- `backend/Dockerfile`
+- `frontend/Dockerfile`
+
+There is no root `Dockerfile` because the project runs multiple services, not one single container.
+
+---
+
+## ⚙️ Prerequisites
+
+For the easiest local run:
 
 - Git
+- Docker Desktop
+
+For source development:
+
 - Python 3.12+
 - Node.js 22+
-- Docker Desktop
-- DockerHub account
+
+For Kubernetes mode:
+
 - kubectl
-- Minikube
+- Minikube or another reachable Kubernetes cluster
+- Helm 3
 - Terraform 1.6+
-- Helm 3+
+- DockerHub or another image registry
 
-For only checking the backend/frontend locally, Python and Node are enough. For the full platform, Docker and Kubernetes tools are needed.
+---
 
-### Full Deployment Requirements
-
-A non-demo deployment requires:
-
-- A reachable Kubernetes cluster and a valid kubeconfig.
-- A container registry containing the backend, frontend, and managed service images.
-- `INFRAWATCH_EXECUTE_KUBECTL=true` on the FastAPI control plane.
-- Prometheus and Loki endpoints reachable from FastAPI.
-- Grafana connected to those observability data sources.
-- A durable state adapter (PostgreSQL is the intended target; the current API repository is file-backed).
-- Correctly managed Kubernetes and GitHub secrets.
-
-Without these dependencies InfraWatch intentionally stays in Demo Mode; it does not pretend to create workloads or collect live cluster telemetry.
-
-## Configuration Reference
-
-InfraWatch keeps local configuration in example files so secrets stay out of source control:
-
-| File | Used by | Notes |
-|---|---|---|
-| `.env.example` | Docker Compose and root scripts | Copy to `.env` before running the full local stack. |
-| `backend/.env.example` | FastAPI local development | Controls kubectl execution, namespace, Prometheus, Loki, and state-file paths. |
-| `frontend/.env.example` | Vite local development | Points the dashboard at the API and can force browser-only demo mode. |
-
-Important runtime flags:
-
-| Variable | Purpose |
-|---|---|
-| `INFRAWATCH_EXECUTE_KUBECTL` | Keeps deployments simulated when `false`; allows real `kubectl` apply/delete flows when `true`. |
-| `INFRAWATCH_PROMETHEUS_URL` | Backend URL for metrics queries in full observability mode. |
-| `INFRAWATCH_LOKI_URL` | Backend URL for log queries in full observability mode. |
-| `VITE_API_BASE_URL` | Frontend API base URL for local or hosted builds. |
-| `VITE_DEMO_MODE` | Forces the frontend-only mock experience when set to `true`. |
-
-## Install Dependencies
-
-### Backend Python Dependencies
+## 🐳 Run the Full Local Stack
 
 From the project root:
 
-```bash
-python -m venv .venv
-.\.venv\Scripts\activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-The root `requirements.txt` installs the Python backend, testing, and linting dependencies.
-
-### Frontend Dependencies
-
-```bash
-cd frontend
-npm ci
-```
-
-Frontend packages are managed by `frontend/package.json` and `frontend/package-lock.json`.
-
-## Validate Changes
-
-Run these checks before opening a pull request or deploying a full environment:
-
-```bash
-cd backend
-ruff check app tests
-python -m pytest
-```
-
-```bash
-cd frontend
-npm run lint
-npm run build
-```
-
-From the project root, `make test` runs the backend test suite and frontend production build. The GitHub Actions workflow also runs backend linting, backend tests, frontend linting, frontend build, and Docker image builds.
-
-## Run Locally Without Docker
-
-Start backend:
-
-```bash
-cd backend
-..\.venv\Scripts\python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-If your shell does not like relative paths, activate the environment first:
-
-```bash
-..\.venv\Scripts\activate
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Start frontend in another terminal:
-
-```bash
-cd frontend
-npm run dev
-```
-
-Open:
-
-```text
-Frontend: http://localhost:5173
-Backend docs: http://localhost:8000/docs
-```
-
-The backend uses safe mock deployment/observability data by default, so you can test the dashboard without a Kubernetes cluster.
-
-## Deploy the Hosted Demo to Vercel
-
-The hosted demo uses two Vercel projects:
-
-- `infrawatch-api` runs the FastAPI backend from `backend/`.
-- `infrawatch-platform` builds the React app and proxies `/api/*` to the backend.
-
-Deploy the API first, then the dashboard:
-
-```bash
-npx vercel --cwd backend --prod --project infrawatch-api
-npx vercel --prod --project infrawatch-platform
-```
-
-On public hosts the frontend calls `/api`, which Vercel rewrites to the hosted FastAPI project. Local Vite development continues to default to `http://localhost:8000`. Set `VITE_DEMO_MODE=true` only when intentionally running the frontend-only browser sandbox.
-
-The Vercel API uses ephemeral serverless storage, so public demo records can reset during cold starts or new deployments. Production Kubernetes mode needs a durable database, cluster credentials, and reachable Prometheus/Loki services; those are provided by the Docker/Kubernetes configuration in this repository, not by Vercel.
-
-## Run Full Local Stack With Docker
-
-Copy the example environment file:
-
-```bash
+```powershell
 copy .env.example .env
 ```
 
-Edit `.env` and set:
+Edit `.env` and set real local passwords:
 
 ```text
 POSTGRES_PASSWORD=your-local-password
 GRAFANA_ADMIN_PASSWORD=your-local-password
 ```
 
-Start everything:
+Start the stack:
 
-```bash
-make up
+```powershell
+docker compose up --build
 ```
 
 Open:
 
+| Service | URL |
+|---|---|
+| 🚀 InfraWatch dashboard | http://localhost:3000 |
+| 🧩 FastAPI docs | http://localhost:8000/docs |
+| 📈 Prometheus | http://localhost:9090 |
+| 📊 Grafana | http://localhost:3001 |
+| 📜 Loki | http://localhost:3100 |
+| 🚨 Alertmanager | http://localhost:9093 |
+
+Grafana login:
+
 ```text
-InfraWatch dashboard: http://localhost:3000
-FastAPI docs:         http://localhost:8000/docs
-Prometheus:           http://localhost:9090
-Grafana:              http://localhost:3001
-Loki:                 http://localhost:3100
+Username: admin
+Password: value from GRAFANA_ADMIN_PASSWORD in .env
 ```
 
-If another local project already uses these ports, override them in `.env` before starting Compose:
+Stop the stack:
+
+```powershell
+docker compose down
+```
+
+Stop and remove local volumes:
+
+```powershell
+docker compose down --volumes --remove-orphans
+```
+
+---
+
+## 🔌 If Ports Are Already Used
+
+If another project already uses `3000`, `8000`, or `5432`, set alternate ports in `.env`:
 
 ```text
 FRONTEND_PORT=13000
@@ -307,117 +208,135 @@ LOKI_PORT=13100
 ALERTMANAGER_PORT=19093
 ```
 
-Demo checklist:
+Then run:
 
-- Confirm the dashboard loads and service fleet cards render.
-- Deploy a sample service such as `jobs-api`.
-- Open the deployed service and review metrics, logs, and current status.
-- Confirm the audit trail records the deploy action.
-- Open Grafana to show the monitoring layer behind the product UI.
-
-By default, the local Compose stack enables `INFRAWATCH_ALLOW_MOCK_OBSERVABILITY=true`. The backend still tries Prometheus and Loki first, but if there are no workload time series or log streams yet it returns realistic mock data marked with `source: "mock"` so the dashboard is useful immediately. Set the flag to `false` when you want strict Prometheus/Loki-only behavior.
-
-## Troubleshooting
-
-| Symptom | What to check |
-|---|---|
-| Dashboard loads but API calls fail | Confirm the backend is running and `VITE_API_BASE_URL` points to the right FastAPI URL. |
-| Docker Compose refuses to start PostgreSQL or Grafana | Copy `.env.example` to `.env` and set `POSTGRES_PASSWORD` and `GRAFANA_ADMIN_PASSWORD`. |
-| Docker Compose reports that 3000, 8000, or 5432 is already allocated | Set `FRONTEND_PORT`, `BACKEND_PORT`, or `POSTGRES_PORT` in `.env` to free host ports, then run `docker compose up -d --build` again. |
-| Deployments stay simulated | This is expected unless `INFRAWATCH_EXECUTE_KUBECTL=true` is set in an environment with a valid kubeconfig. |
-| Metrics or logs look mocked | Prometheus and Loki data is simulated until the backend can reach real `INFRAWATCH_PROMETHEUS_URL` and `INFRAWATCH_LOKI_URL` services. |
-| Hosted demo state resets | Vercel serverless storage is ephemeral; use the Docker or Kubernetes path for durable local state. |
-
-## Main API Endpoints
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/deploy` | Trigger a deployment |
-| GET | `/deployments` | List deployments |
-| GET | `/audit-logs` | List deployment and delete audit events |
-| GET | `/metrics/{service}` | Get service metrics |
-| GET | `/logs/{service}` | Get service logs |
-| DELETE | `/deployment/{name}` | Delete a deployment |
-| POST | `/deployment/{name}/rollback` | Roll back a Kubernetes deployment to its previous revision |
-| GET | `/healthz` | Health check |
-| GET | `/internal/metrics` | Prometheus scrape endpoint |
-
-Example:
-
-```bash
-curl -X POST http://localhost:8000/deploy ^
-  -H "Content-Type: application/json" ^
-  -d "{\"name\":\"catalog-api\",\"image\":\"docker.io/example/catalog-api:latest\",\"replicas\":2,\"port\":8080}"
+```powershell
+docker compose up --build
 ```
 
-## Kubernetes Deployment
+With the values above, open:
+
+- Dashboard: http://localhost:13000
+- API docs: http://localhost:18000/docs
+- Prometheus: http://localhost:19090
+- Grafana: http://localhost:13001
+
+---
+
+## 🧪 Demo Mode and Mock Data
+
+Demo Mode exists so the dashboard is usable without a Kubernetes cluster.
+
+In Demo Mode:
+
+- Deploy actions validate input and generate Kubernetes-style records.
+- No real workload is created.
+- Metrics and logs are realistic mock data.
+- Audit events are still recorded.
+- The UI clearly shows a **Demo Mode** banner.
+
+The Docker Compose stack enables this by default:
+
+```text
+INFRAWATCH_ALLOW_MOCK_OBSERVABILITY=true
+INFRAWATCH_EXECUTE_KUBECTL=false
+```
+
+For strict real observability, set:
+
+```text
+INFRAWATCH_ALLOW_MOCK_OBSERVABILITY=false
+```
+
+If Prometheus or Loki has no data in strict mode, the API returns an error instead of hiding it with fake data.
+
+---
+
+## 💻 Run Backend and Frontend Without Docker
+
+Install backend dependencies:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Start backend:
+
+```powershell
+cd backend
+..\.venv\Scripts\python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+If your shell does not like the relative path, activate the virtual environment first and run:
+
+```powershell
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Start frontend in another terminal:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Open:
+
+- Frontend: http://localhost:5173
+- Backend docs: http://localhost:8000/docs
+
+---
+
+## ☸️ Run Kubernetes Mode
+
+Kubernetes mode is the real deployment path. It requires an active cluster.
 
 Start Minikube:
 
-```bash
+```powershell
 minikube start
+minikube addons enable metrics-server
 ```
 
 Create namespace and secrets:
 
-```bash
+```powershell
 kubectl apply -f k8s/namespace.yaml
-kubectl create secret generic infrawatch-secrets ^
-  --namespace infrawatch ^
-  --from-literal=POSTGRES_PASSWORD=use-a-strong-password ^
+kubectl create secret generic infrawatch-secrets `
+  --namespace infrawatch `
+  --from-literal=POSTGRES_PASSWORD=use-a-strong-password `
   --from-literal=DATABASE_URL=postgresql://infrawatch:use-a-strong-password@infrawatch-postgres:5432/infrawatch
 ```
 
-Deploy:
+Deploy InfraWatch:
 
-```bash
-make deploy
+```powershell
+kubectl apply -k k8s
+kubectl rollout status deployment/infrawatch-backend --namespace infrawatch --timeout=180s
+kubectl rollout status deployment/infrawatch-frontend --namespace infrawatch --timeout=180s
 ```
 
-Open frontend:
+Open the frontend:
 
-```bash
+```powershell
 minikube service infrawatch-frontend --namespace infrawatch
 ```
 
-## Monitoring Setup
+Install observability with Terraform/Helm:
 
-Terraform installs Prometheus, Grafana, Alertmanager, Loki, and Promtail through Helm.
-
-```bash
+```powershell
 cd terraform
 terraform init
 terraform apply -var="grafana_admin_password=replace-with-a-strong-password"
 ```
 
-Open Grafana in Kubernetes mode:
+---
 
-```bash
-make monitor
-```
-
-## Where To Add DockerHub and Secrets
-
-Do not commit real passwords, tokens, or kubeconfig files.
-
-| Value | Where to add it |
-|---|---|
-| DockerHub username | GitHub repo secret `DOCKERHUB_USERNAME` |
-| DockerHub token | GitHub repo secret `DOCKERHUB_TOKEN` |
-| Kubernetes config for CI/CD | GitHub repo secret `KUBE_CONFIG_B64` |
-| Local DB password | `.env` |
-| Local Grafana password | `.env` |
-| Kubernetes DB password | Kubernetes Secret `infrawatch-secrets` |
-| Backend config | `backend/.env` or Kubernetes ConfigMap |
-| Docker image names | `k8s/deployments/backend.yaml` and `k8s/deployments/frontend.yaml` |
-
-GitHub secrets path:
-
-```text
-GitHub Repository -> Settings -> Secrets and variables -> Actions
-```
-
-## GitHub Actions
+## 🔁 GitHub Actions CI/CD
 
 Workflow file:
 
@@ -425,16 +344,18 @@ Workflow file:
 .github/workflows/ci-cd.yml
 ```
 
-It does:
+On push or pull request, it runs:
 
-- Backend install, lint, and tests
-- Frontend install, lint, and build
-- Docker image build
-- DockerHub push
-- Kubernetes deployment
-- GitHub commit deployment status
+- ✅ Backend dependency install
+- ✅ Ruff lint
+- ✅ Backend tests
+- ✅ Frontend dependency install
+- ✅ ESLint
+- ✅ Frontend production build
+- ✅ Backend Docker image build
+- ✅ Frontend Docker image build
 
-Required secrets for full deployment:
+On push to `main`, it can also publish and deploy, but only if these GitHub repository secrets exist:
 
 ```text
 DOCKERHUB_USERNAME
@@ -442,57 +363,115 @@ DOCKERHUB_TOKEN
 KUBE_CONFIG_B64
 ```
 
-## Useful Commands
+Important:
 
-| Command | Purpose |
-|---|---|
-| `python -m pip install -r requirements.txt` | Install Python dependencies |
-| `npm ci` | Install frontend dependencies |
-| `npm run build` | Build frontend |
-| `docker compose up --build` | Start the complete local stack |
-| `docker compose ps` | Inspect running containers |
-| `make up` | Start local Docker stack |
-| `make deploy` | Deploy Kubernetes manifests |
-| `make monitor` | Port-forward Grafana |
-| `make clean` | Clean Docker/Kubernetes resources |
-| `kubectl kustomize k8s` | Validate Kubernetes output |
-| `docker compose config` | Validate Docker Compose |
+- `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` are required to publish images.
+- `KUBE_CONFIG_B64` must point to a reachable Kubernetes cluster.
+- A laptop-only Minikube cluster is not reachable from GitHub-hosted runners unless you explicitly expose/configure it.
 
-## Documentation
+---
 
-| File | Purpose |
-|---|---|
-| `flow.md` | Reviewer-friendly project flow, demo script, API tour, and troubleshooting. |
-| `docs/ARCHITECTURE.md` | Ground-truth architecture and deployment/metrics/logs/alerts/autoscaling data flows. |
-| `docs/TROUBLESHOOTING.md` | SRE-style failure diagnosis commands and recovery steps. |
-| `docs/INTERVIEW_DEMO.md` | 10-15 minute Red Hat SRE interview demo script. |
-| `docs/CV_CLAIM_AUDIT.md` | Honest audit of production-grade, zero-touch, visibility, log-streaming, and 60% claims. |
-| `docs/MEASUREMENT.md` | Reproducible process for deployment-cycle and API-latency measurements. |
-| `docs/INTERVIEW_KNOWLEDGE_MAP.md` | What to learn to defend each technology in the project. |
-| `docs/INTERVIEW_QUESTIONS.md` | Project-specific interview question bank. |
-| `docs/REDHAT_INTERVIEW_BRIEF.md` | Concise study brief for the Red Hat SRE interview. |
-| `docs/screenshots/infrawatch-command-center.png` | Main dashboard screenshot used by the README. |
-| `.github/workflows/ci-cd.yml` | CI/CD pipeline for lint, tests, build, image publishing, and deployment. |
+## 🧭 Main API Endpoints
 
-### Real Local Kubernetes Mode
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/healthz` | Health and active mode summary |
+| `POST` | `/deploy` | Create/update a deployment record or Kubernetes workload |
+| `GET` | `/deployments` | List known deployments |
+| `DELETE` | `/deployment/{name}` | Delete a deployment |
+| `POST` | `/deployment/{name}/rollback` | Roll back a Kubernetes deployment |
+| `GET` | `/metrics/{service}` | Read service metrics |
+| `GET` | `/logs/{service}` | Read service logs |
+| `GET` | `/audit-logs` | Read recent deployment/audit events |
+| `GET` | `/metrics` | Prometheus scrape endpoint |
+| `GET` | `/internal/metrics` | Alternate Prometheus scrape endpoint |
 
-Real mode is intentionally separate from the public Vercel demo. In Minikube, FastAPI can execute `kubectl`, wait for rollout status, verify ready/available replicas, store deployment/audit state in PostgreSQL, and read real Prometheus/Loki data. The frontend reaches the backend through the Nginx `/api` proxy inside the frontend container, so no Ingress is required for the basic local demo.
+Example deploy request:
 
-Start with:
-
-```bash
-docs/ARCHITECTURE.md
-docs/INTERVIEW_DEMO.md
-docs/TROUBLESHOOTING.md
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8000/deploy" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"name":"catalog-api","image":"docker.io/example/catalog-api:latest","replicas":2,"port":8080}'
 ```
 
-GitHub Actions uses immutable `${GITHUB_SHA}` Docker image tags. It can deploy to Kubernetes only when `KUBE_CONFIG_B64` points to a reachable cluster; a laptop-only Minikube cluster is not reachable from hosted GitHub runners unless you explicitly expose/configure it.
+---
 
-## Roadmap
+## 🧪 Validate the Project
 
-- Multi-tenant users and organizations
-- GitHub App integration
-- AWS EKS deployment module
-- Billing module
-- Canary and blue-green deployments
-- Better service-level SLO dashboards
+Backend:
+
+```powershell
+cd backend
+..\.venv\Scripts\python -m ruff check app tests
+..\.venv\Scripts\python -m pytest
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm ci
+npm run lint
+npm run build
+```
+
+Docker Compose config:
+
+```powershell
+docker compose config --quiet
+```
+
+Kubernetes manifest output:
+
+```powershell
+kubectl kustomize k8s
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+| Problem | Check |
+|---|---|
+| Docker stack does not start | Open Docker Desktop and run `docker compose ps` |
+| Port already allocated | Set alternate `FRONTEND_PORT`, `BACKEND_PORT`, or `POSTGRES_PORT` in `.env` |
+| Dashboard loads but API fails | Confirm backend health at `/healthz` |
+| Charts show simulated telemetry | Expected when no real Prometheus/Loki workload data exists |
+| Deployments do not create real pods | Set `INFRAWATCH_EXECUTE_KUBECTL=true` in a valid Kubernetes environment |
+| GitHub Actions publish fails | Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets |
+| GitHub Actions deploy fails | Add `KUBE_CONFIG_B64` for a reachable cluster |
+
+More operational troubleshooting is in:
+
+- `docs/ARCHITECTURE.md`
+- `docs/TROUBLESHOOTING.md`
+
+---
+
+## 🧾 Honest Limitations
+
+InfraWatch is a strong portfolio/SRE prototype, but it is not an enterprise SaaS product yet.
+
+Not implemented:
+
+- user accounts/authentication
+- multi-tenant authorization
+- GitHub OAuth/App repo onboarding
+- building arbitrary user repositories from the UI
+- TLS/Ingress production exposure
+- canary or blue-green release strategy
+- WebSocket log streaming
+
+Current deployment scope:
+
+- The UI/API can deploy an already-built container image to the connected Kubernetes cluster.
+- The GitHub Actions workflow deploys the InfraWatch app itself when registry and Kubernetes secrets are configured.
+- It does not yet let any random user connect their GitHub repository and deploy that repository automatically.
+
+---
+
+## 📌 Good One-Line Description
+
+InfraWatch is a cloud-native SRE prototype that combines a React dashboard, FastAPI control plane, Docker/Kubernetes deployment flow, PostgreSQL audit state, and Prometheus/Loki/Grafana observability into one local/demo platform.

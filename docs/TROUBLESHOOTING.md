@@ -1,6 +1,6 @@
 # InfraWatch Troubleshooting
 
-Use this as an SRE interview runbook.
+Use this as an SRE-style operations runbook for diagnosing the local or Kubernetes deployment.
 
 ## Application unavailable
 
@@ -279,4 +279,3 @@ Rollback:
 kubectl rollout undo deployment/<name> -n infrawatch
 kubectl rollout status deployment/<name> -n infrawatch
 ```
-
