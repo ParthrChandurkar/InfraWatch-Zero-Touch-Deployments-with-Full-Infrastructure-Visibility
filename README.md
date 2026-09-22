@@ -372,6 +372,18 @@ Important:
 - If DockerHub secrets exist but `KUBE_CONFIG_B64` is missing, the workflow still publishes Docker images and clearly skips the Kubernetes rollout.
 - The workflow can also be started manually from the GitHub Actions tab with **Run workflow**.
 
+Optional local Minikube deployment:
+
+- Register a self-hosted GitHub Actions runner on your machine with the custom label `local-k8s`.
+- Keep Docker Desktop and Minikube running.
+- Add this GitHub Actions repository variable only when the runner is online:
+
+```text
+INFRAWATCH_DEPLOY_TARGET=local-minikube
+```
+
+With that variable enabled, the workflow publishes DockerHub images first, then deploys those images to your local Minikube cluster through the self-hosted runner. Without the variable, local Minikube deployment is skipped so GitHub Actions does not get stuck waiting for your laptop.
+
 ---
 
 ## 🧭 Main API Endpoints
