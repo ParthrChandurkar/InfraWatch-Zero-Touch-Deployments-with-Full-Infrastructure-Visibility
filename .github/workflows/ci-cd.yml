@@ -85,16 +85,22 @@ jobs:
             exit 1
           fi
 
+      - name: Normalize DockerHub username
+        run: |
+          clean_username="$(printf '%s' "$DOCKERHUB_USERNAME" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+          if [ -z "$clean_username" ]; then
+            echo "::error::DOCKERHUB_USERNAME is empty after trimming whitespace."
+            exit 1
+          fi
+          echo "DOCKERHUB_USERNAME_CLEAN=$clean_username" >> "$GITHUB_ENV"
+
       - name: Set Docker image names
         run: |
-          echo "BACKEND_IMAGE=${DOCKERHUB_USERNAME}/infrawatch-backend" >> "$GITHUB_ENV"
-          echo "FRONTEND_IMAGE=${DOCKERHUB_USERNAME}/infrawatch-frontend" >> "$GITHUB_ENV"
+          echo "BACKEND_IMAGE=${DOCKERHUB_USERNAME_CLEAN}/infrawatch-backend" >> "$GITHUB_ENV"
+          echo "FRONTEND_IMAGE=${DOCKERHUB_USERNAME_CLEAN}/infrawatch-frontend" >> "$GITHUB_ENV"
 
       - name: Log in to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
-          password: ${{ env.DOCKERHUB_TOKEN }}
+        run: echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME_CLEAN" --password-stdin
 
       - name: Build and push backend image
         run: |
@@ -168,8 +174,13 @@ jobs:
       - name: Set Docker image names
         if: env.KUBE_DEPLOY_ENABLED == 'true'
         run: |
-          echo "BACKEND_IMAGE=${DOCKERHUB_USERNAME}/infrawatch-backend" >> "$GITHUB_ENV"
-          echo "FRONTEND_IMAGE=${DOCKERHUB_USERNAME}/infrawatch-frontend" >> "$GITHUB_ENV"
+          clean_username="$(printf '%s' "$DOCKERHUB_USERNAME" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
+          if [ -z "$clean_username" ]; then
+            echo "::error::DOCKERHUB_USERNAME is empty after trimming whitespace."
+            exit 1
+          fi
+          echo "BACKEND_IMAGE=${clean_username}/infrawatch-backend" >> "$GITHUB_ENV"
+          echo "FRONTEND_IMAGE=${clean_username}/infrawatch-frontend" >> "$GITHUB_ENV"
 
       - name: Configure kubectl
         if: env.KUBE_DEPLOY_ENABLED == 'true'
