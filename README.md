@@ -368,6 +368,8 @@ Important:
 - `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` are required to publish images.
 - `KUBE_CONFIG_B64` must point to a reachable Kubernetes cluster.
 - A laptop-only Minikube cluster is not reachable from GitHub-hosted runners unless you explicitly expose/configure it.
+- If DockerHub secrets exist but `KUBE_CONFIG_B64` is missing, the workflow still publishes Docker images and clearly skips the Kubernetes rollout.
+- The workflow can also be started manually from the GitHub Actions tab with **Run workflow**.
 
 ---
 
