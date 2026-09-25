@@ -1,52 +1,57 @@
 # 🚀 InfraWatch
 
-**Zero-touch deployment workflow + infrastructure visibility for containerized services.**
+**Local K8s deployment and observability platform for lightweight applications.**
 
-InfraWatch is a full-stack DevOps/SRE project that lets you submit a containerized service, track its deployment state, inspect metrics/logs, and review an audit trail from one dashboard.
+InfraWatch helps developers test containerized apps on a local Kubernetes cluster and view deployment health, logs, metrics, and rollout activity from one simple dashboard.
 
-It is intentionally honest about its modes:
+Think of it as **CloudWatch-style visibility for local Kubernetes labs** — useful for learning, testing, demos, and validating small services before moving to real cloud infrastructure.
 
-- 🌐 **Hosted Vercel demo:** interactive portfolio/demo environment with simulated Kubernetes execution and simulated telemetry.
-- 🐳 **Docker Compose local stack:** runs the frontend, FastAPI backend, PostgreSQL, Prometheus, Grafana, Loki, Alertmanager, and Promtail locally.
-- ☸️ **Kubernetes mode:** applies generated Kubernetes manifests with `kubectl` when a real cluster and credentials are configured.
-- 🔁 **GitHub Actions CI/CD:** validates, builds, publishes Docker images, and deploys to Kubernetes only when required repository secrets are configured.
-
-> ⚠️ InfraWatch does **not** pretend Vercel is running Kubernetes. Public hosted mode is a demo. Real Kubernetes deployment requires a real Kubernetes cluster.
+> InfraWatch is local-first. It does not claim that the hosted demo is running a real Kubernetes cluster.
 
 ---
 
 ## ✨ What InfraWatch Does
 
-- 🚀 Deploy or update a service by entering:
-  - service name
-  - container image
-  - replica count
-  - service port
-- 📦 Generate Kubernetes `Deployment` and `Service` manifests.
-- ✅ In Kubernetes mode, run `kubectl apply`, wait for rollout status, and verify ready/available replicas.
-- 🔁 Roll back a managed deployment with Kubernetes rollout undo.
+- 🚀 Deploy or update an already-built container image.
+- ☸️ Generate and apply Kubernetes `Deployment` and `Service` manifests.
+- ✅ Check rollout status and ready/available replicas.
+- 🔁 Roll back a managed Kubernetes deployment.
 - 📊 Show CPU, memory, request-rate, and error-rate charts.
 - 📜 Show recent service logs.
-- 🧾 Store deployment and delete actions in an audit trail.
-- 🐘 Use PostgreSQL when `DATABASE_URL` is configured, with JSON-file fallback for simple demo/test environments.
-- 📈 Expose Prometheus-compatible FastAPI metrics at `/metrics` and `/internal/metrics`.
-- 🧪 Run backend tests, frontend lint/build, and Docker image builds through GitHub Actions.
+- 🧾 Keep an audit trail for deployment and delete actions.
+- 🐘 Store state in PostgreSQL when configured.
+- 🧪 Provide safe demo/mock data when no real cluster metrics exist.
+- 🔁 Use GitHub Actions for optional Docker image publishing and deployment automation.
+
+---
+
+## 🎯 Project Direction
+
+InfraWatch is being shaped as:
+
+```text
+Local app image → Local Kubernetes → InfraWatch dashboard → health, logs, metrics, rollback
+```
+
+The goal is simple:
+
+> Help developers run and observe lightweight applications locally before paying for or depending on AWS, Azure, or GCP.
 
 ---
 
 ## ✅ What Is Real vs Demo
 
-| Feature | Hosted Vercel Demo | Docker Compose Local | Kubernetes Mode |
-|---|---|---|---|
+| Feature | Docker Compose Local | Local Kubernetes / Minikube | Hosted Demo |
+|---|---:|---:|---:|
 | React dashboard | ✅ Real | ✅ Real | ✅ Real |
 | FastAPI backend | ✅ Real | ✅ Real | ✅ Real |
-| PostgreSQL persistence | ❌ Not on Vercel | ✅ Real | ✅ Real when configured |
-| Kubernetes workload creation | ❌ Simulated | ❌ Simulated by default | ✅ Real with `INFRAWATCH_EXECUTE_KUBECTL=true` |
-| Metrics/logs | 🧪 Realistic mock fallback | 🧪 Mock fallback unless workloads emit data | ✅ Prometheus/Loki when configured |
-| Grafana dashboards | ❌ Not hosted on Vercel | ✅ Local Grafana | ✅ Cluster Grafana |
-| CI/CD deployment | ❌ Not automatic without secrets | N/A | ✅ With DockerHub + kubeconfig secrets |
+| PostgreSQL state | ✅ Real | ✅ Real when configured | ❌ Not on Vercel |
+| Kubernetes workload creation | 🧪 Off by default | ✅ Real when enabled | ❌ Simulated |
+| Metrics and logs | 🧪 Mock fallback unless data exists | ✅ Prometheus/Loki when configured | 🧪 Simulated |
+| Grafana dashboards | ✅ Local | ✅ Local/cluster setup | ❌ Not hosted |
+| GitHub Actions CI/CD | ✅ Optional | ✅ Optional | ❌ Not automatic |
 
-If you are opening the public site, you are using **Demo Mode**. Demo Mode is useful because the dashboard remains interactive without asking anyone to install Kubernetes.
+If you are opening the public Vercel site, you are using **Demo Mode**. Demo Mode keeps the dashboard interactive without asking visitors to install Kubernetes.
 
 ---
 
@@ -65,19 +70,19 @@ The public demo uses the correctly spelled **InfraWatch** name. The shorter `inf
 
 ```mermaid
 flowchart LR
-    User[User] --> UI[React Dashboard]
-    UI --> API[FastAPI Backend]
+    User[Developer] --> UI[React Dashboard]
+    UI --> API[FastAPI Control Plane]
     API --> Store[(PostgreSQL or JSON State)]
     API --> Kube[kubectl / Kubernetes API]
-    Kube --> Workloads[Managed Services]
-    Workloads --> Prom[Prometheus]
-    Workloads --> Loki[Loki]
+    Kube --> Apps[Local App Workloads]
+    Apps --> Prom[Prometheus]
+    Apps --> Loki[Loki]
     Prom --> API
     Loki --> API
-    Prom --> Grafana[Grafana Dashboards]
+    Prom --> Grafana[Grafana]
 ```
 
-In Demo Mode, the `kubectl`, Prometheus, and Loki paths are replaced by safe simulated responses.
+In Demo Mode, Kubernetes, Prometheus, and Loki calls are replaced by safe simulated responses.
 
 ---
 
@@ -89,10 +94,10 @@ In Demo Mode, the `kubectl`, Prometheus, and Loki paths are replaced by safe sim
 | Backend | Python, FastAPI, Pydantic |
 | State | PostgreSQL, JSON fallback |
 | Containers | Docker, Docker Compose |
-| Orchestration | Kubernetes manifests, Minikube-compatible setup |
+| Local Kubernetes | Minikube-compatible Kubernetes manifests |
 | Observability | Prometheus, Grafana, Loki, Promtail, Alertmanager |
-| Infrastructure config | Terraform, Helm values |
-| CI/CD | GitHub Actions, Docker image build/publish/deploy flow |
+| Automation | GitHub Actions, DockerHub image publishing |
+| Infra setup | Terraform and Helm values for observability components |
 
 ---
 
@@ -101,21 +106,21 @@ In Demo Mode, the `kubectl`, Prometheus, and Loki paths are replaced by safe sim
 ```text
 backend/                  FastAPI API, deployment logic, observability clients
 frontend/                 React dashboard served by Nginx
-k8s/                      Kubernetes namespace, services, deployments, HPA, secrets examples
-terraform/                Helm-based monitoring/logging stack setup
+k8s/                      Kubernetes namespace, services, deployments, HPA examples
+terraform/                Helm-based monitoring/logging setup
 monitoring/               Prometheus, Grafana, and Alertmanager config
 logging/                  Loki/Promtail config
-scripts/                  Utility scripts for alerts and measurements
+scripts/                  Utility scripts
 .github/workflows/        CI/CD pipeline
 docker-compose.yml        Local full-stack runtime
 ```
 
-Dockerfiles are intentionally service-specific:
+Dockerfiles are service-specific:
 
 - `backend/Dockerfile`
 - `frontend/Dockerfile`
 
-There is no root `Dockerfile` because the project runs multiple services, not one single container.
+There is no root `Dockerfile` because InfraWatch runs multiple services.
 
 ---
 
@@ -149,7 +154,7 @@ From the project root:
 copy .env.example .env
 ```
 
-Edit `.env` and set real local passwords:
+Edit `.env` and set local passwords:
 
 ```text
 POSTGRES_PASSWORD=your-local-password
@@ -225,17 +230,17 @@ With the values above, open:
 
 ## 🧪 Demo Mode and Mock Data
 
-Demo Mode exists so the dashboard is usable without a Kubernetes cluster.
+Demo Mode exists so InfraWatch remains usable without a Kubernetes cluster.
 
 In Demo Mode:
 
-- Deploy actions validate input and generate Kubernetes-style records.
+- Deploy actions validate input and create Kubernetes-style records.
 - No real workload is created.
-- Metrics and logs are realistic mock data.
+- Metrics and logs use realistic sample data.
 - Audit events are still recorded.
 - The UI clearly shows a **Demo Mode** banner.
 
-The Docker Compose stack enables this by default:
+The Docker Compose stack enables safe fallback data by default:
 
 ```text
 INFRAWATCH_ALLOW_MOCK_OBSERVABILITY=true
@@ -270,12 +275,6 @@ cd backend
 ..\.venv\Scripts\python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-If your shell does not like the relative path, activate the virtual environment first and run:
-
-```powershell
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
 Start frontend in another terminal:
 
 ```powershell
@@ -291,9 +290,9 @@ Open:
 
 ---
 
-## ☸️ Run Kubernetes Mode
+## ☸️ Run Local Kubernetes Mode
 
-Kubernetes mode is the real deployment path. It requires an active cluster.
+Kubernetes mode is the real local deployment path. It requires an active cluster.
 
 Start Minikube:
 
@@ -366,23 +365,21 @@ KUBE_CONFIG_B64
 Important:
 
 - `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` are required to publish images.
-- If you copy/paste `DOCKERHUB_USERNAME`, avoid leading/trailing spaces. The workflow trims whitespace as a guard, but the secret should still be clean.
 - `KUBE_CONFIG_B64` must point to a reachable Kubernetes cluster.
-- A laptop-only Minikube cluster is not reachable from GitHub-hosted runners unless you explicitly expose/configure it.
-- If DockerHub secrets exist but `KUBE_CONFIG_B64` is missing, the workflow still publishes Docker images and clearly skips the Kubernetes rollout.
-- The workflow can also be started manually from the GitHub Actions tab with **Run workflow**.
+- A laptop-only Minikube cluster is not reachable from GitHub-hosted runners by default.
+- If DockerHub secrets exist but `KUBE_CONFIG_B64` is missing, the workflow still publishes Docker images and clearly skips Kubernetes rollout.
 
 Optional local Minikube deployment:
 
 - Register a self-hosted GitHub Actions runner on your machine with the custom label `local-k8s`.
 - Keep Docker Desktop and Minikube running.
-- Add this GitHub Actions repository variable only when the runner is online:
+- Add this repository variable only when the runner is online:
 
 ```text
 INFRAWATCH_DEPLOY_TARGET=local-minikube
 ```
 
-With that variable enabled, the workflow publishes DockerHub images first, then deploys those images to your local Minikube cluster through the self-hosted runner. Without the variable, local Minikube deployment is skipped so GitHub Actions does not get stuck waiting for your laptop.
+With that variable enabled, the workflow publishes DockerHub images first, then deploys those images to your local Minikube cluster through the self-hosted runner.
 
 ---
 
@@ -451,7 +448,7 @@ kubectl kustomize k8s
 | Problem | Check |
 |---|---|
 | Docker stack does not start | Open Docker Desktop and run `docker compose ps` |
-| Port already allocated | Set alternate `FRONTEND_PORT`, `BACKEND_PORT`, or `POSTGRES_PORT` in `.env` |
+| Port already allocated | Set alternate ports in `.env` |
 | Dashboard loads but API fails | Confirm backend health at `/healthz` |
 | Charts show simulated telemetry | Expected when no real Prometheus/Loki workload data exists |
 | Deployments do not create real pods | Set `INFRAWATCH_EXECUTE_KUBECTL=true` in a valid Kubernetes environment |
@@ -465,16 +462,31 @@ More operational troubleshooting is in:
 
 ---
 
+## 🚧 In Progress
+
+InfraWatch is being improved to become easier for everyone to use as an open-source local Kubernetes tool.
+
+Planned improvements:
+
+- 🧩 Simple app onboarding form.
+- 🐳 Better Docker image guidance for new users.
+- ☸️ Easier Minikube/kind setup instructions.
+- 📊 Cleaner default Grafana dashboards.
+- 🔐 Safer secret setup documentation.
+- 🔁 Optional GitHub repo workflow generation in a future version.
+
+---
+
 ## 🧾 Honest Limitations
 
-InfraWatch is a strong portfolio/SRE prototype, but it is not an enterprise SaaS product yet.
+InfraWatch is a local-first SRE/DevOps project, not an enterprise SaaS product.
 
-Not implemented:
+Not implemented yet:
 
 - user accounts/authentication
 - multi-tenant authorization
 - GitHub OAuth/App repo onboarding
-- building arbitrary user repositories from the UI
+- automatic builds for arbitrary user repositories from the UI
 - TLS/Ingress production exposure
 - canary or blue-green release strategy
 - WebSocket log streaming
@@ -487,6 +499,6 @@ Current deployment scope:
 
 ---
 
-## 📌 Good One-Line Description
+## 📌 One-Line Description
 
-InfraWatch is a cloud-native SRE prototype that combines a React dashboard, FastAPI control plane, Docker/Kubernetes deployment flow, PostgreSQL audit state, and Prometheus/Loki/Grafana observability into one local/demo platform.
+InfraWatch is a local-first Kubernetes deployment and observability platform that gives lightweight apps simple health, logs, metrics, rollout, and audit visibility.
