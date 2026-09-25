@@ -37,6 +37,16 @@ The goal is simple:
 
 > Help developers run and observe lightweight applications locally before paying for or depending on AWS, Azure, or GCP.
 
+Good use cases:
+
+- 🧑‍💻 Learning Kubernetes with a real dashboard.
+- 🧪 Testing small services before cloud deployment.
+- 🔍 Checking pod health, service status, logs, and metrics locally.
+- 🎓 Showing SRE/DevOps concepts in a portfolio project.
+- 💸 Practicing infrastructure workflows without cloud cost.
+
+InfraWatch is currently best for lightweight apps that already have a container image or can be containerized with Docker.
+
 ---
 
 ## ✅ What Is Real vs Demo
