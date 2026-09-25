@@ -238,6 +238,22 @@ With the values above, open:
 
 ---
 
+## 🖥️ Main Local Interfaces
+
+InfraWatch has one main application dashboard and a few supporting observability tools.
+
+| Interface | Default URL | Alternate URL example |
+|---|---|---|
+| 🚀 InfraWatch app | http://localhost:3000 | http://localhost:13000 |
+| 🧩 FastAPI docs | http://localhost:8000/docs | http://localhost:18000/docs |
+| 📈 Prometheus | http://localhost:9090 | http://localhost:19090 |
+| 📊 Grafana | http://localhost:3001 | http://localhost:13001 |
+| 🚨 Alertmanager | http://localhost:9093 | http://localhost:19093 |
+
+Grafana uses the credentials from your local `.env` file.
+
+---
+
 ## 🧪 Demo Mode and Mock Data
 
 Demo Mode exists so InfraWatch remains usable without a Kubernetes cluster.
