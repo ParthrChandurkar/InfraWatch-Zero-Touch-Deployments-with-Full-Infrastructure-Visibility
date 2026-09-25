@@ -492,6 +492,10 @@ More operational troubleshooting is in:
 
 InfraWatch is being improved to become easier for everyone to use as an open-source local Kubernetes tool.
 
+Current focus:
+
+> Making InfraWatch available for everyone who wants a simple local K8s deployment and observability setup.
+
 Planned improvements:
 
 - 🧩 Simple app onboarding form.
