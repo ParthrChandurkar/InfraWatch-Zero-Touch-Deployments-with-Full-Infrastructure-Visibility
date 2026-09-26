@@ -114,13 +114,20 @@ services:
     networks:
       - infrawatch
 
-  promtail:
-    image: grafana/promtail:3.3.2
-    container_name: infrawatch-promtail
-    command: -config.file=/etc/promtail/promtail.yml
+  alloy:
+    image: grafana/alloy:v1.20.0
+    container_name: infrawatch-alloy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "${ALLOY_PORT:-12345}:12345"
     volumes:
-      - ./logging/promtail/promtail-docker.yml:/etc/promtail/promtail.yml:ro
+      - ./logging/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy/data
     depends_on:
       - loki
     networks:
@@ -130,6 +137,7 @@ volumes:
   backend-state:
   postgres-data:
   grafana-data:
+  alloy-data:
 
 networks:
   infrawatch:

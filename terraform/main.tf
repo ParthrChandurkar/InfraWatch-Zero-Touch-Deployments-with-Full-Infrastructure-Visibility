@@ -69,16 +69,16 @@ resource "helm_release" "loki" {
   ]
 }
 
-# Promtail ships pod logs into Loki.
-resource "helm_release" "promtail" {
-  name       = "infrawatch-promtail"
+# Grafana Alloy ships pod logs into Loki.
+resource "helm_release" "alloy" {
+  name       = "infrawatch-alloy"
   namespace  = kubernetes_namespace.infrawatch.metadata[0].name
   repository = "https://grafana.github.io/helm-charts"
-  chart      = "promtail"
-  version    = var.promtail_chart_version
+  chart      = "alloy"
+  version    = var.alloy_chart_version
 
   values = [
-    file("${path.module}/../logging/promtail/values.yaml")
+    file("${path.module}/../logging/alloy/values.yaml")
   ]
 
   depends_on = [helm_release.loki]

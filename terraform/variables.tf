@@ -35,8 +35,8 @@ variable "loki_chart_version" {
   default     = "6.24.0"
 }
 
-variable "promtail_chart_version" {
-  description = "Helm chart version for Promtail."
+variable "alloy_chart_version" {
+  description = "Helm chart version for Grafana Alloy."
   type        = string
-  default     = "6.16.6"
+  default     = "1.13.0"
 }

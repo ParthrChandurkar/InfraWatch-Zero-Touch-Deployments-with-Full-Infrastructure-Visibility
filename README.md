@@ -47,6 +47,8 @@ Good use cases:
 
 InfraWatch is currently best for lightweight apps that already have a container image or can be containerized with Docker.
 
+New users should start with [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+
 ---
 
 ## ✅ What Is Real vs Demo
@@ -94,7 +96,7 @@ In Demo Mode, Kubernetes, Prometheus, and Loki calls are replaced by safe simula
 | State | PostgreSQL, JSON fallback |
 | Containers | Docker, Docker Compose |
 | Local Kubernetes | Minikube-compatible Kubernetes manifests |
-| Observability | Prometheus, Grafana, Loki, Promtail, Alertmanager |
+| Observability | Prometheus, Grafana, Loki, Grafana Alloy, Alertmanager |
 | Automation | GitHub Actions, DockerHub image publishing |
 | Infra setup | Terraform and Helm values for observability components |
 
@@ -108,7 +110,8 @@ frontend/                 React dashboard served by Nginx
 k8s/                      Kubernetes namespace, services, deployments, HPA examples
 terraform/                Helm-based monitoring/logging setup
 monitoring/               Prometheus, Grafana, and Alertmanager config
-logging/                  Loki/Promtail config
+logging/                  Loki and Grafana Alloy config
+docs/                     Getting started, architecture, and troubleshooting guides
 scripts/                  Utility scripts
 .github/workflows/        CI/CD pipeline
 docker-compose.yml        Local full-stack runtime
@@ -175,6 +178,7 @@ Open:
 | 📈 Prometheus | http://localhost:9090 |
 | 📊 Grafana | http://localhost:3001 |
 | 📜 Loki | http://localhost:3100 |
+| 🔎 Grafana Alloy | http://localhost:12345 |
 | 🚨 Alertmanager | http://localhost:9093 |
 
 Grafana login:
@@ -209,6 +213,7 @@ POSTGRES_PORT=15432
 PROMETHEUS_PORT=19090
 GRAFANA_PORT=13001
 LOKI_PORT=13100
+ALLOY_PORT=12345
 ALERTMANAGER_PORT=19093
 ```
 
@@ -224,6 +229,7 @@ With the values above, open:
 - API docs: http://localhost:18000/docs
 - Prometheus: http://localhost:19090
 - Grafana: http://localhost:13001
+- Grafana Alloy: http://localhost:12345
 
 ---
 
@@ -237,6 +243,7 @@ InfraWatch has one main application dashboard and a few supporting observability
 | 🧩 FastAPI docs | http://localhost:8000/docs | http://localhost:18000/docs |
 | 📈 Prometheus | http://localhost:9090 | http://localhost:19090 |
 | 📊 Grafana | http://localhost:3001 | http://localhost:13001 |
+| 🔎 Grafana Alloy | http://localhost:12345 | http://localhost:12345 |
 | 🚨 Alertmanager | http://localhost:9093 | http://localhost:19093 |
 
 Grafana uses the credentials from your local `.env` file.

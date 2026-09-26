@@ -119,7 +119,7 @@ In real mode, mock fallback is disabled. If Prometheus is unavailable, the API r
 ```text
 Application stdout/stderr
   -> Kubernetes container logs
-  -> Promtail
+  -> Grafana Alloy
   -> Loki
   -> FastAPI /logs/{service}
   -> React near-real-time log polling
@@ -127,10 +127,11 @@ Application stdout/stderr
 
 The dashboard polls every 5 seconds. This is near-real-time log streaming via polling, not WebSockets.
 
-Promtail labels pods with:
+Grafana Alloy labels pod logs with:
 
 - `namespace`
 - `pod`
+- `container`
 - `app`
 
 FastAPI queries Loki with:

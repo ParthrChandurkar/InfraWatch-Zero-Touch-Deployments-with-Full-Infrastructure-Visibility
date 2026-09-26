@@ -235,13 +235,13 @@ http_requests_total
 First command:
 
 ```bash
-kubectl get pods -n infrawatch | grep promtail
+kubectl get pods -n infrawatch | grep alloy
 ```
 
 Next:
 
 ```bash
-kubectl logs -n infrawatch -l app.kubernetes.io/name=promtail
+kubectl logs -n infrawatch -l app.kubernetes.io/name=alloy
 ```
 
 Grafana/Loki query:
@@ -253,7 +253,7 @@ Grafana/Loki query:
 
 Look for:
 
-- Promtail cannot reach Loki
+- Grafana Alloy cannot reach Loki
 - labels do not match FastAPI query
 - selected service emits no logs
 
