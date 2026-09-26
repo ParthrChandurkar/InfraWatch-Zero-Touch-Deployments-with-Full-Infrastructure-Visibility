@@ -5,14 +5,13 @@ InfraWatch has two explicit modes.
 ## Demo Mode
 
 ```text
-Vercel React frontend
-  -> Vercel /api rewrite
-  -> FastAPI
+React frontend
+  -> browser sandbox store
   -> manifest simulation
   -> mock metrics/logs
 ```
 
-Demo Mode is safe for public portfolio review. It does not run Kubernetes workloads.
+Demo Mode is safe for local UI exploration and portfolio screenshots. It does not run Kubernetes workloads.
 
 ## Real Local Kubernetes Mode
 

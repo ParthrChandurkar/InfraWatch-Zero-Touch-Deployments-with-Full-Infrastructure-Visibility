@@ -119,7 +119,7 @@ def _build_repositories(settings: Settings) -> tuple[DeploymentRepository, Audit
 
 
 def _seed_demo_deployments(service: DeploymentService) -> None:
-    """Populate hosted demo runtimes with useful, non-sensitive sample services."""
+    """Populate demo runtimes with useful, non-sensitive sample services."""
 
     for payload in (
         DeploymentRequest(

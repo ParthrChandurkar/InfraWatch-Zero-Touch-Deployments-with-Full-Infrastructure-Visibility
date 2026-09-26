@@ -70,11 +70,9 @@ const EMPTY_METRICS: ServiceMetrics = {
 };
 
 const EMPTY_LOGS: LogsResponse = { service: "", lines: [], source: "empty" };
-const REPOSITORY_URL = "https://github.com/ParthrChandurkar/InfraWatch-Zero-Touch-Deployments-with-Full-Infrastructure-Visibility";
-const HOSTED_API_URL = "https://infrawatch-api.vercel.app";
+const REPOSITORY_URL = "https://github.com/ParthrChandurkar/InfraWatch";
 
 function App() {
-  const isHostedApi = apiMode === "hosted";
   const isLocalApi = apiMode === "local";
   const [deployments, setDeployments] = useState<DeploymentRecord[]>([]);
   const [selected, setSelected] = useState<string>("");
@@ -264,14 +262,14 @@ function App() {
     () =>
       liveChartData.length
         ? liveChartData
-        : selectedDeployment && (isBrowserFallback || isHostedApi)
+        : selectedDeployment && isBrowserFallback
           ? buildDemoChartData(selectedDeployment.name)
           : [],
-    [isBrowserFallback, isHostedApi, liveChartData, selectedDeployment],
+    [isBrowserFallback, liveChartData, selectedDeployment],
   );
   const telemetryMode = liveChartData.length
     ? sourceLabel(metrics.source)
-    : selectedDeployment && (isBrowserFallback || isHostedApi)
+    : selectedDeployment && isBrowserFallback
       ? "Demo baseline"
       : selectedDeployment
         ? "No live data"
@@ -301,9 +299,9 @@ function App() {
 
   const pipelineSteps = [
     { icon: <GitBranch size={17} />, label: "GitHub", value: "main synced", state: "ready" },
-    { icon: <Rocket size={17} />, label: "Delivery", value: isHostedApi ? "Vercel production" : "validation gate", state: "ready" },
-    { icon: <Layers size={17} />, label: "Deployments", value: isHostedApi ? "Manifest simulation" : "Docker images", state: "ready" },
-    { icon: <Server size={17} />, label: "Runtime", value: isBrowserFallback ? "Browser mock fallback" : isHostedApi ? "Vercel + FastAPI" : "Docker Compose", state: "live" },
+    { icon: <Rocket size={17} />, label: "Delivery", value: "local validation", state: "ready" },
+    { icon: <Layers size={17} />, label: "Deployments", value: isBrowserFallback ? "Manifest simulation" : "Docker images", state: "ready" },
+    { icon: <Server size={17} />, label: "Runtime", value: isBrowserFallback ? "Browser sandbox" : isLocalApi ? "Local full stack" : "Configured API", state: "live" },
     { icon: <Gauge size={17} />, label: "Telemetry", value: telemetryMode, state: "live" },
   ];
 
@@ -316,14 +314,14 @@ function App() {
           <span className="brand-mark">IW</span>
           <div>
             <strong>InfraWatch</strong>
-            <small>Zero-touch deployment control</small>
+            <small>Local K8s observability</small>
           </div>
         </div>
 
         <div className="environment-card">
           <div>
             <span>Environment</span>
-            <strong>{isBrowserFallback ? "Mock API fallback" : isHostedApi ? "Hosted FastAPI demo" : "Local full stack"}</strong>
+            <strong>{isBrowserFallback ? "Browser Demo Mode" : isLocalApi ? "Local full stack" : "Configured API"}</strong>
           </div>
           <span className="pulse-dot" />
         </div>
@@ -369,9 +367,9 @@ function App() {
       <main className="main-panel">
         <header className="command-header">
           <div>
-            <span className="eyebrow">Production Operations Console</span>
-            <h1>InfraWatch Command Center</h1>
-            <p>Release orchestration, fleet health, live telemetry, and incident logs in one control plane.</p>
+            <span className="eyebrow">Local Kubernetes Console</span>
+            <h1>InfraWatch Local Command Center</h1>
+            <p>Deploy lightweight services locally, check rollout health, and inspect logs and metrics in one control plane.</p>
           </div>
           <div className="header-actions" aria-label="External operations tools">
             {!isLocalApi ? (
@@ -386,9 +384,9 @@ function App() {
                   Architecture
                   <ExternalLink size={14} />
                 </a>
-                <a href={isHostedApi ? `${HOSTED_API_URL}/docs` : `${REPOSITORY_URL}#main-api-endpoints`} target="_blank" rel="noreferrer">
+                <a href={`${REPOSITORY_URL}#main-api-endpoints`} target="_blank" rel="noreferrer">
                   <Terminal size={16} />
-                  {isHostedApi ? "Live API Docs" : "API Contract"}
+                  API Contract
                   <ExternalLink size={14} />
                 </a>
               </>
@@ -414,7 +412,7 @@ function App() {
           </div>
         </header>
 
-        {(isDemoMode || isHostedApi) && <DemoModeBanner hosted={isHostedApi} fallback={usingApiFallback && isHostedApi} />}
+        {isDemoMode && <DemoModeBanner />}
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -476,13 +474,9 @@ function App() {
             </div>
 
             <form className="deploy-form" onSubmit={handleDeploy}>
-              {(isDemoMode || isHostedApi) && (
+              {isDemoMode && (
                 <p className="sandbox-note">
-                  {usingApiFallback
-                    ? "The hosted API is temporarily unavailable, so this action uses the private browser mock store."
-                    : isHostedApi
-                    ? "FastAPI validates this request and generates a Kubernetes manifest. No real workload is started without a connected cluster."
-                    : "Try any valid service name and container image. Changes are private to this device."}
+                  Try any valid service name and container image. Changes are private to this device in browser Demo Mode.
                 </p>
               )}
               <label>
@@ -667,7 +661,7 @@ function App() {
                 <h2>Readiness</h2>
               </div>
             </div>
-            <Signal label="Control plane" value={usingApiFallback ? "Browser fallback active" : isHostedApi ? "Hosted FastAPI online" : isDemoMode ? "Browser sandbox ready" : "FastAPI online"} state="ok" />
+            <Signal label="Control plane" value={isDemoMode || usingApiFallback ? "Browser sandbox ready" : "FastAPI online"} state="ok" />
             <Signal label="Metrics path" value={telemetryMode} state="ok" />
             <Signal label="Average CPU" value={`${telemetry.avgCpu.toFixed(2)} cores`} state="ok" />
             <Signal label="Peak memory" value={`${Math.round(telemetry.peakMemory)} MB`} state="ok" />
@@ -695,25 +689,21 @@ function SummaryCard({ icon, label, value, tone }: { icon: ReactNode; label: str
   );
 }
 
-function DemoModeBanner({ hosted, fallback }: { hosted: boolean; fallback: boolean }) {
+function DemoModeBanner() {
   return (
     <section className="demo-mode-banner" role="note" aria-label="Demo Mode">
       <div className="demo-mode-title">
         <AlertTriangle size={22} aria-hidden="true" />
         <div>
           <strong>DEMO MODE</strong>
-          <span>Portfolio environment</span>
+          <span>Browser sandbox</span>
         </div>
       </div>
       <p>
-        {fallback
-          ? "The hosted API is temporarily unavailable. Realistic browser mock responses are keeping this demo interactive."
-          : hosted
-          ? "The FastAPI control plane is live. Kubernetes deployments, Prometheus metrics, and Loki logs use realistic simulation because no cluster is attached."
-          : "This frontend-only sandbox keeps all changes in your browser and uses realistic simulated infrastructure data."}
+        This frontend-only sandbox keeps all changes in your browser and uses realistic simulated infrastructure data.
       </p>
       <div className="demo-capabilities" aria-label="Demo capabilities">
-        <span className={fallback ? "fallback" : "real"}>{fallback ? "Mock fallback active" : hosted ? "Live FastAPI" : "Interactive UI"}</span>
+        <span className="real">Interactive UI</span>
         <span>Simulated Kubernetes</span>
         <span>Mock metrics & logs</span>
       </div>

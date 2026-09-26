@@ -13,10 +13,10 @@ import {
 const configuredApiUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 const isLocalBrowser = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const demoModeRequested = import.meta.env.VITE_DEMO_MODE === "true";
-const API_BASE_URL = demoModeRequested ? "" : configuredApiUrl || (isLocalBrowser ? "http://localhost:8000" : "/api");
+const API_BASE_URL = demoModeRequested ? "" : configuredApiUrl || (isLocalBrowser ? "http://localhost:8000" : "");
 
 export const isDemoMode = API_BASE_URL === "";
-export const apiMode = isDemoMode ? "browser" : isLocalBrowser ? "local" : "hosted";
+export const apiMode = isDemoMode ? "browser" : isLocalBrowser ? "local" : "configured";
 
 type FallbackListener = (active: boolean) => void;
 
@@ -69,17 +69,10 @@ async function withDemoFallback<T>(apiCall: () => Promise<T>, demoCall: () => T)
 
   try {
     const result = await apiCall();
-    if (apiMode === "hosted") {
-      setFallbackActive(false);
-    }
+    setFallbackActive(false);
     return result;
   } catch (error) {
-    const canFallback = apiMode === "hosted" && (!(error instanceof ApiResponseError) || error.status >= 500);
-    if (!canFallback) {
-      throw error;
-    }
-    setFallbackActive(true);
-    return demoCall();
+    throw error;
   }
 }
 

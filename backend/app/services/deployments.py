@@ -55,7 +55,7 @@ class DeploymentService:
         status = DeploymentStatus.deploying if self._settings.execute_kubectl else DeploymentStatus.running
         message = "Deployment accepted; Kubernetes rollout verification is starting."
         if not self._settings.execute_kubectl:
-            message = "Kubernetes manifest generated; kubectl execution is disabled in this hosted demo."
+            message = "Kubernetes manifest generated; kubectl execution is disabled in Demo Mode."
 
         record = DeploymentRecord(
             name=request.name,

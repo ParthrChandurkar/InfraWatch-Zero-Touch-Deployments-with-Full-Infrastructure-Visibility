@@ -6,7 +6,7 @@ InfraWatch helps developers test containerized apps on a local Kubernetes cluste
 
 Think of it as **CloudWatch-style visibility for local Kubernetes labs** — useful for learning, testing, demos, and validating small services before moving to real cloud infrastructure.
 
-> InfraWatch is local-first. It does not claim that the hosted demo is running a real Kubernetes cluster.
+> InfraWatch is local-first. Browser Demo Mode is simulated and does not run a real Kubernetes cluster.
 
 ---
 
@@ -51,28 +51,17 @@ InfraWatch is currently best for lightweight apps that already have a container 
 
 ## ✅ What Is Real vs Demo
 
-| Feature | Docker Compose Local | Local Kubernetes / Minikube | Hosted Demo |
+| Feature | Docker Compose Local | Local Kubernetes / Minikube | Browser Demo Mode |
 |---|---:|---:|---:|
 | React dashboard | ✅ Real | ✅ Real | ✅ Real |
 | FastAPI backend | ✅ Real | ✅ Real | ✅ Real |
-| PostgreSQL state | ✅ Real | ✅ Real when configured | ❌ Not on Vercel |
+| PostgreSQL state | ✅ Real | ✅ Real when configured | ❌ Uses sample/browser state |
 | Kubernetes workload creation | 🧪 Off by default | ✅ Real when enabled | ❌ Simulated |
 | Metrics and logs | 🧪 Mock fallback unless data exists | ✅ Prometheus/Loki when configured | 🧪 Simulated |
-| Grafana dashboards | ✅ Local | ✅ Local/cluster setup | ❌ Not hosted |
+| Grafana dashboards | ✅ Local | ✅ Local/cluster setup | ❌ Not included |
 | GitHub Actions CI/CD | ✅ Optional | ✅ Optional | ❌ Not automatic |
 
-If you are opening the public Vercel site, you are using **Demo Mode**. Demo Mode keeps the dashboard interactive without asking visitors to install Kubernetes.
-
----
-
-## 🌍 Live Demo
-
-- Frontend: [https://infrawatch-platform.vercel.app](https://infrawatch-platform.vercel.app)
-- API: [https://infrawatch-api.vercel.app](https://infrawatch-api.vercel.app)
-- API health: [https://infrawatch-api.vercel.app/healthz](https://infrawatch-api.vercel.app/healthz)
-- API docs: [https://infrawatch-api.vercel.app/docs](https://infrawatch-api.vercel.app/docs)
-
-The public demo uses the correctly spelled **InfraWatch** name. The shorter `infrawatch.vercel.app` alias is not used because it is already owned by another Vercel account.
+Demo Mode keeps the dashboard interactive without asking visitors to install Kubernetes. It is useful for screenshots, portfolio review, and quick UI exploration.
 
 ---
 

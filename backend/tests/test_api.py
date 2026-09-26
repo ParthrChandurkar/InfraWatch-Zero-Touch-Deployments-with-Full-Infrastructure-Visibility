@@ -105,11 +105,11 @@ def test_demo_rollback_is_audited_without_kubectl(tmp_path) -> None:
     assert audit_logs.json()[0]["action"] == "deployment.rollback_simulated"
 
 
-def test_hosted_demo_can_seed_sample_services(tmp_path) -> None:
-    """Hosted demo runtimes start with useful sample data when explicitly enabled."""
+def test_demo_runtime_can_seed_sample_services(tmp_path) -> None:
+    """Demo runtimes start with useful sample data when explicitly enabled."""
 
     settings = Settings(
-        environment="vercel-demo",
+        environment="demo",
         state_file=str(tmp_path / "deployments.json"),
         audit_file=str(tmp_path / "audit-log.json"),
         execute_kubectl=False,
